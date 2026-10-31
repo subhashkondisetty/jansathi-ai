@@ -21,6 +21,14 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().default(5000),
   CLIENT_ORIGIN: z.string().default('http://localhost:5173'),
+  MONGODB_URI: z.string().default('mongodb://127.0.0.1:27017/jansathi'),
+  LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
+  BODY_LIMIT: z.string().default('100kb'),
+  TRUST_PROXY: z.coerce.number().default(0),
+  RATE_LIMIT_GLOBAL_MAX: z.coerce.number().default(300),
+  RATE_LIMIT_AUTH_MAX: z.coerce.number().default(10),
+  RATE_LIMIT_AI_PER_MIN: z.coerce.number().default(20),
+  RATE_LIMIT_UPLOAD_PER_HOUR: z.coerce.number().default(10),
 });
 
 const parsed = envSchema.safeParse(process.env);

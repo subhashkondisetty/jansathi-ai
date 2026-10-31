@@ -39,7 +39,7 @@ export default function App() {
               <p className="text-xs text-slate-400 mt-0.5">Civic Information Assistant</p>
             </div>
             <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-slate-800 text-slate-300 border border-slate-700">
-              Phase 1
+              Phase 2
             </span>
           </div>
         </header>
@@ -111,6 +111,18 @@ export default function App() {
                   <dt className="text-slate-500 font-medium">Status</dt>
                   <dd className="inline-flex items-center px-2 py-0.5 rounded text-emerald-700 bg-emerald-100 font-semibold uppercase">
                     {healthData.status}
+                  </dd>
+                </div>
+                <div className="flex justify-between py-2 border-b border-slate-100">
+                  <dt className="text-slate-500 font-medium">Database</dt>
+                  <dd
+                    className={`inline-flex items-center px-2 py-0.5 rounded font-semibold uppercase ${
+                      healthData.database === 'connected'
+                        ? 'text-emerald-700 bg-emerald-100'
+                        : 'text-amber-700 bg-amber-100'
+                    }`}
+                  >
+                    {healthData.database || 'disconnected'}
                   </dd>
                 </div>
                 <div className="flex justify-between py-2 border-b border-slate-100">

@@ -6,6 +6,7 @@
 - **Data Format**: JSON (Content-Type: `application/json`)
 - **Dates**: ISO-8601 UTC string format (e.g., `2026-10-31T16:50:00.000Z`)
 - **Authentication**: JWT sent via HTTP Authorization header: `Authorization: Bearer <token>`
+- **Request Tracking**: Every request accepts or generates a unique `X-Request-Id` header (max 64 characters, safe alphanumeric/hyphen/underscore), echoed in response headers and error envelopes.
 
 ## Response Structure
 
@@ -28,9 +29,9 @@ When a collection is paginated, `meta` contains:
 ```json
 {
   "page": 1,
-  "limit": 10,
+  "limit": 12,
   "total": 42,
-  "totalPages": 5
+  "totalPages": 4
 }
 ```
 
@@ -44,7 +45,8 @@ All error responses return HTTP 4xx/5xx and adhere to:
   "error": {
     "code": "ERROR_CODE",
     "message": "Human readable error message",
-    "details": [ ... ] // optional array or object for field-level validation errors
+    "details": [ ... ], // optional array or object for field-level validation errors
+    "requestId": "c1f7a0b3-8fa2-4d22-83b6-12c8b9d8853f"
   }
 }
 ```
@@ -55,7 +57,7 @@ All error responses return HTTP 4xx/5xx and adhere to:
 | ------------------------ | ----------- | ---------------------------------------------------------------- |
 | `VALIDATION_ERROR`       | 400         | Request validation failure (e.g. invalid parameters or schema)   |
 | `UNAUTHENTICATED`        | 401         | Missing or invalid authentication token                          |
-| `FORBIDDEN`              | 403         | Insufficient role or access permissions                          |
+| `FORBIDDEN`              | 403         | Insufficient role or access permissions / CORS origin rejection  |
 | `NOT_FOUND`              | 404         | Resource not found                                               |
 | `CONFLICT`               | 409         | Conflicting resource state (e.g. duplicate key)                  |
 | `PAYLOAD_TOO_LARGE`      | 413         | Request payload exceeds maximum allowable size                   |
@@ -65,11 +67,42 @@ All error responses return HTTP 4xx/5xx and adhere to:
 | `NOT_IMPLEMENTED`        | 501         | Feature or AI capability hook point not yet implemented          |
 | `SERVICE_UNAVAILABLE`    | 503         | Dependent downstream service or database temporarily unavailable |
 
+## Rate Limiting
+
+The API enforces rate limits using standard IETF draft-7 headers:
+
+- `RateLimit-Limit`: Maximum allowable requests in the current window.
+- `RateLimit-Remaining`: Number of requests remaining in the current window.
+- `RateLimit-Reset`: Seconds remaining until the rate limit window resets.
+
+### Rate Limit Windows & Policies
+
+- **Global**: 300 requests / 15 minutes (`RATE_LIMIT_GLOBAL_MAX`)
+- **Authentication**: 10 requests / 15 minutes (`RATE_LIMIT_AUTH_MAX`)
+- **AI Endpoints**: 20 requests / 1 minute (`RATE_LIMIT_AI_PER_MIN`), keyed by User ID or IP
+- **Upload Endpoints**: 10 requests / 1 hour (`RATE_LIMIT_UPLOAD_PER_HOUR`), keyed by User ID or IP
+
+### Rate Limit Exceeded Response (429)
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "RATE_LIMITED",
+    "message": "Too many requests. Please try again later.",
+    "details": {
+      "retryAfterSeconds": 900
+    },
+    "requestId": "b0a5146c-c9d3-4a15-b930-b186b5ea3b11"
+  }
+}
+```
+
 ## Endpoints
 
-### 1. Health Check
+### 1. Health Liveness Probe
 
-Retrieves the operational status of the API server.
+Retrieves the operational liveness of the API server process and database state.
 
 - **Method**: `GET`
 - **Path**: `/api/health`
@@ -82,8 +115,43 @@ Retrieves the operational status of the API server.
       "status": "ok",
       "service": "jansathi-ai-server",
       "environment": "development",
+      "database": "connected",
       "uptimeSeconds": 120,
-      "timestamp": "2026-10-31T16:50:00.000Z"
+      "timestamp": "2026-11-01T00:15:00.000Z"
+    }
+  }
+  ```
+
+### 2. Health Readiness Probe
+
+Indicates whether the API server is ready to accept incoming traffic (requires operational database connection).
+
+- **Method**: `GET`
+- **Path**: `/api/health/ready`
+- **Access**: Public
+- **Response 200 OK (DB Connected)**:
+  ```json
+  {
+    "success": true,
+    "data": {
+      "status": "ready",
+      "service": "jansathi-ai-server",
+      "database": "connected",
+      "timestamp": "2026-11-01T00:15:00.000Z"
+    }
+  }
+  ```
+- **Response 503 SERVICE_UNAVAILABLE (DB Disconnected)**:
+  ```json
+  {
+    "success": false,
+    "error": {
+      "code": "SERVICE_UNAVAILABLE",
+      "message": "Database is not ready",
+      "details": {
+        "database": "disconnected"
+      },
+      "requestId": "d820ef02-fa33-40a5-ae8d-71b569e2a6a1"
     }
   }
   ```
