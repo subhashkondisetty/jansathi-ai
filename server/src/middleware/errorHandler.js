@@ -60,7 +60,7 @@ export const errorHandler = (err, req, res, next) => {
   // 6. JWT errors
   else if (err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError') {
     status = 401;
-    code = 'UNAUTHENTICATED';
+    code = err.name === 'TokenExpiredError' ? 'TOKEN_EXPIRED' : 'UNAUTHENTICATED';
     message = err.name === 'TokenExpiredError' ? 'Token expired' : 'Invalid or malformed token';
   }
   // 7. Multer errors

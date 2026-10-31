@@ -41,6 +41,7 @@ export const authLimiter = rateLimit({
   limit: env.RATE_LIMIT_AUTH_MAX,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
+  skipSuccessfulRequests: true,
   handler: createRateLimitHandler(15 * 60 * 1000),
 });
 

@@ -81,3 +81,6 @@ export const disconnectDb = async () => {
 export const isDbReady = () => {
   return mongoose.connection.readyState === 1;
 };
+
+export const connectDB = connectDb;
+export const disconnectDB = disconnectDb;

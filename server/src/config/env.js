@@ -29,6 +29,12 @@ const envSchema = z.object({
   RATE_LIMIT_AUTH_MAX: z.coerce.number().default(10),
   RATE_LIMIT_AI_PER_MIN: z.coerce.number().default(20),
   RATE_LIMIT_UPLOAD_PER_HOUR: z.coerce.number().default(10),
+  JWT_SECRET: z.string().min(16).default('jansathi-development-secret-jwt-key-2026'),
+  JWT_EXPIRES_IN: z.string().default('7d'),
+  BCRYPT_ROUNDS: z.coerce.number().int().min(4).max(16).default(12),
+  ADMIN_EMAIL: z.string().email().optional(),
+  ADMIN_NAME: z.string().optional(),
+  ADMIN_PASSWORD: z.string().min(8).optional(),
   AUDIT_LOG_TTL_DAYS: z.coerce.number().int().positive().default(180),
   AUTO_INDEX: z
     .union([z.boolean(), z.string()])
