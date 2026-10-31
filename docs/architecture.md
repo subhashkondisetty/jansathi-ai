@@ -1,0 +1,3 @@
+# JanSathi AI Architecture
+
+JanSathi AI is built as a modular MERN-stack monorepo designed to empower Indian citizens with accurate, transparent access to government schemes, notifications, and eligibility criteria. The architecture separates concerns between a mobile-first, responsive React 18 client and a robust Node.js/Express 4 backend with MongoDB Atlas persistence. Non-AI workflows (authentication, scheme discovery, document ingestion, and administrative oversight) form the bedrock of the platform, with well-defined hook points prepared for AI, translation, RAG, and vector search capabilities in subsequent phases.
