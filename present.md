@@ -3,72 +3,125 @@
 > **Event**: FORGE '26 — Theme 1: "Civic Pulse"  
 > **Project**: JanSathi AI (Government-Information Assistant for Indian Citizens)  
 > **Current Date**: November 1, 2026  
-> **Current Milestone**: Phase 1 & Phase 2 Complete, Verified & Live
+> **Current Milestone**: Phase 1, Phase 2 & Phase 3 Complete, Verified & Live Against MongoDB Atlas
 
 ---
 
-## 1. Executive Summary
+## 1. Quick Access Links
 
-JanSathi AI is built as a production-grade, non-AI MERN monorepo foundation. All AI functionalities (LLM generation, vector embeddings, semantic search, RAG, multilingual translation, speech-to-text, and eligibility reasoning) are reserved for later phases through documented hook points that return `HTTP 501 NOT_IMPLEMENTED`.
-
-Up to this point, **Phase 1 (Monorepo Foundation)** and **Phase 2 (Server Core & Database Integration)** are fully implemented, verified with live end-to-end integration tests, and connected to **MongoDB Atlas**.
-
----
-
-## 2. 13-Phase Milestone Roadmap
-
-| Phase       | Milestone Name                   | Status                           | Key Highlights                                                                                                                       |
-| ----------- | -------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| **Phase 1** | **Monorepo Foundation**          | **DONE & COMMITTED** (`309a4cc`) | Workspaces (`client`, `server`), ESLint 9 flat config, Prettier, Vite, Tailwind CSS 3, Express scaffolding, `/api/health`            |
-| **Phase 2** | **Server Core & DB Integration** | **DONE & VERIFIED**              | MongoDB Atlas cluster connected, Pino logger + redaction, Helmet CSP, CORS allowlist, Rate limiters, Zod validators, Readiness probe |
-| Phase 3     | Authentication & User Model      | Pending                          | Mongoose User model, bcrypt, JWT auth, role-based access (`citizen`, `admin`)                                                        |
-| Phase 4     | Scheme Catalog Core              | Pending                          | Scheme model, CRUD, categories, indexing, public search                                                                              |
-| Phase 5     | Document Ingestion Pipeline      | Pending                          | PDF/HTML upload, metadata extraction, background job queue                                                                           |
-| Phase 6     | Admin Governance & Review        | Pending                          | Document review, audit logs, scheme approval workflows                                                                               |
-| Phase 7     | Citizen Portal UI                | Pending                          | Scheme discovery, filtering, bookmarking, mobile-first design                                                                        |
-| Phase 8     | AI Hook Architecture (Stubs)     | Pending                          | 501 NOT_IMPLEMENTED contracts for RAG, embeddings, and chat                                                                          |
-| Phase 9     | Notifications & Civic Alerts     | Pending                          | Circulars, acts, notifications feeds, urgency tags                                                                                   |
-| Phase 10    | Multilingual Meta Framework      | Pending                          | Language enums (`en`, `te`, `hi`, `ta`), UI localization scaffolding                                                                 |
-| Phase 11    | Eligibility Checklist Engine     | Pending                          | Deterministic non-AI rule evaluator for scheme eligibility                                                                           |
-| Phase 12    | End-to-End Testing & Auditing    | Pending                          | Vitest + Supertest integration tests, OWASP security audit                                                                           |
-| Phase 13    | Final Polish & Production Deploy | Pending                          | Render/Atlas production build, Docker, demo script                                                                                   |
+| Service                            | URL                                                                              | Status     | Description                                                |
+| :--------------------------------- | :------------------------------------------------------------------------------- | :--------- | :--------------------------------------------------------- |
+| **Frontend Client (Vite + React)** | [http://localhost:5173](http://localhost:5173)                                   | **LIVE**   | Citizen UI down to 360px viewport with Vite `/api` proxy   |
+| **Backend Server (Express API)**   | [http://localhost:5000](http://localhost:5000)                                   | **LIVE**   | Node 20+ Express server with security middleware pipeline  |
+| **Liveness Health Probe**          | [http://localhost:5000/api/health](http://localhost:5000/api/health)             | **200 OK** | Service uptime, ISO date, database connection check        |
+| **Readiness Health Probe**         | [http://localhost:5000/api/health/ready](http://localhost:5000/api/health/ready) | **200 OK** | Readiness verification checking MongoDB Atlas connectivity |
 
 ---
 
-## 3. Current Architecture & Technology Stack
+## 2. Executive Summary
 
-### A. Repository & Workspaces
+JanSathi AI is built on a production-grade, non-AI MERN monorepo foundation. In accordance with project architecture guidelines, all AI functionalities (LLM generation, vector embeddings, semantic search, RAG, multilingual translation, speech-to-text, and eligibility reasoning) are reserved for later phases through documented hook points that return `HTTP 501 NOT_IMPLEMENTED`. Absolutely zero fake, canned, or simulated AI data is permitted in the codebase.
 
-- **Monorepo Manager**: npm workspaces (`workspaces: ["client", "server"]`)
-- **Runtime Target**: Node.js &ge; 20 (Tested on Node v24.18.0)
-- **Module System**: Pure ES Modules (`"type": "module"` on both client and server)
-- **Environment Strategy**: Single root `.env` (gitignored) with validated schema in `server/src/config/env.js` and public template in `.env.example`.
+Up to this point:
 
-### B. Backend (`server/`)
-
-- **Web Framework**: Express 4.21 with strict middleware execution order:
-  $$\text{requestId} \rightarrow \text{httpLogger} \rightarrow \text{helmet} \rightarrow \text{cors} \rightarrow \text{body parser (100kb)} \rightarrow \text{mongoSanitize} \rightarrow \text{hpp} \rightarrow \text{globalLimiter} \rightarrow \text{routes} \rightarrow \text{notFound} \rightarrow \text{errorHandler}$$
-- **Database**: MongoDB Atlas Cluster via Mongoose 8.24 with bounded retry (3 attempts, exponential backoff) and custom public DNS resolver fallback (`8.8.8.8`, `1.1.1.1`) to guarantee Windows/ISP SRV record resolution.
-- **Security & Hardening**:
-  - Helmet with strict Content Security Policy for JSON APIs.
-  - CORS origin allowlist parsing comma-separated origins from `CLIENT_ORIGIN`.
-  - NoSQL injection prevention via `express-mongo-sanitize`.
-  - HTTP Parameter Pollution protection via `hpp`.
-  - Draft-7 standard rate limit headers via `express-rate-limit`.
-- **Logging**: Pino 10 + Pino-HTTP with automatic redaction of `authorization`, `cookie`, `password`, `token`, and sensitive request bodies; pretty-printed in development via `pino-pretty`.
-- **Validation**: Zod 3.24 with field-level error formatting and safe Express request assignment.
-
-### C. Frontend (`client/`)
-
-- **Framework**: React 18.3 + React DOM 18.3
-- **Build System**: Vite 5.4 with dev proxy forwarding `/api` &rarr; `http://localhost:5000`
-- **Routing**: React Router 6.28
-- **Styling**: Tailwind CSS 3.4 + PostCSS + Autoprefixer (mobile-first down to 360px viewport)
-- **Networking**: Axios 1.7 instance with automatic 20s timeout and JSON headers
+- **Phase 1 (Monorepo Foundation)**: Fully implemented and committed (`309a4cc`).
+- **Phase 2 (Server Core & Database Connection)**: Fully implemented and committed (`60b0899`). Connected to live MongoDB Atlas cluster with automatic DNS SRV resolution.
+- **Phase 3 (Mongoose Models & Database Indexes)**: Fully implemented and verified. All 9 domain schemas created, system enums frozen, indexes synced live against MongoDB Atlas, model validations tested, and zero lint/format errors.
 
 ---
 
-## 4. Complete Codebase Inventory
+## 3. 13-Phase Milestone Roadmap
+
+| Phase       | Milestone Name                   | Status                                | Key Highlights                                                                                                                       |
+| :---------- | :------------------------------- | :------------------------------------ | :----------------------------------------------------------------------------------------------------------------------------------- |
+| **Phase 1** | **Monorepo Foundation**          | **DONE & COMMITTED** (`309a4cc`)      | Workspaces (`client`, `server`), ESLint 9 flat config, Prettier, Vite, Tailwind CSS 3, Express scaffolding, `/api/health`            |
+| **Phase 2** | **Server Core & DB Integration** | **DONE & COMMITTED** (`60b0899`)      | MongoDB Atlas cluster connected, Pino logger + redaction, Helmet CSP, CORS allowlist, Rate limiters, Zod validators, Readiness probe |
+| **Phase 3** | **Mongoose Models & DB Indexes** | **DONE & VERIFIED** (Ready to Commit) | 9 domain models, 17 system enums, text search index, TTL audit log index, `npm run db:sync-indexes` tooling                          |
+| Phase 4     | Scheme Catalog Core & CRUD       | Pending                               | Scheme model, CRUD endpoints, categories, indexing, public search                                                                    |
+| Phase 5     | Document Ingestion Pipeline      | Pending                               | PDF/HTML upload, metadata extraction, background job queue                                                                           |
+| Phase 6     | Admin Governance & Review        | Pending                               | Document review, audit logs, scheme approval workflows                                                                               |
+| Phase 7     | Citizen Portal UI                | Pending                               | Scheme discovery, filtering, bookmarking, mobile-first design                                                                        |
+| Phase 8     | AI Hook Architecture (Stubs)     | Pending                               | 501 NOT_IMPLEMENTED contracts for RAG, embeddings, and chat                                                                          |
+| Phase 9     | Notifications & Civic Alerts     | Pending                               | Circulars, acts, notifications feeds, urgency tags                                                                                   |
+| Phase 10    | Multilingual Meta Framework      | Pending                               | Language enums (`en`, `te`, `hi`, `ta`), UI localization scaffolding                                                                 |
+| Phase 11    | Eligibility Checklist Engine     | Pending                               | Deterministic non-AI rule evaluator for scheme eligibility                                                                           |
+| Phase 12    | End-to-End Testing & Auditing    | Pending                               | Vitest + Supertest integration tests, OWASP security audit                                                                           |
+| Phase 13    | Final Polish & Production Deploy | Pending                               | Render/Atlas production build, Docker, demo script                                                                                   |
+
+---
+
+## 4. Phase 3 Architecture: Models & Indexes
+
+### A. Data Models (`server/src/models/`)
+
+All 9 Mongoose models implement `timestamps: true` and the shared `toJSONPlugin` (`_id` mapped to `id`, `__v` stripped, sensitive/internal fields scrubbed):
+
+1. **`User`** (`User.js`):
+   - Fields: `name`, `email` (unique, lowercase), `passwordHash`, `role` (`citizen`, `reviewer`, `admin`, `superadmin`), `preferredLanguage`, `phone`, `isActive`, `lastLoginAt`.
+   - Index: Unique index on `email`.
+2. **`Source`** (`Source.js`):
+   - Fields: `name`, `url` (unique), `sourceType` (`central_portal`, `state_portal`, `gazette`, `ministry_site`), `crawlFrequency`, `isActive`, `lastScrapedAt`.
+   - Index: Unique index on `url`, compound index `{ sourceType: 1, isActive: 1 }`.
+3. **`Document`** (`Document.js`):
+   - Fields: `title`, `documentType` (`scheme`, `act`, `rule`, `circular`, `notification`, `guideline`), `sourceId` (ref: Source), `ministry`, `department`, `state` (36 States/UTs or national), `status` (`draft`, `published`, `archived`), `tags`, `publishedAt`.
+   - Indexes: `{ documentType: 1, status: 1 }`, `{ state: 1, publishedAt: -1 }`, `{ tags: 1 }`.
+4. **`DocumentPage`** (`DocumentPage.js`):
+   - Fields: `documentId` (ref: Document), `pageNumber`, `rawText`, `status` (`pending`, `processed`, `failed`).
+   - Index: Compound unique `{ documentId: 1, pageNumber: 1 }`.
+5. **`DocumentChunk`** (`DocumentChunk.js`):
+   - Fields: `documentId` (ref: Document), `pageId` (ref: DocumentPage), `chunkIndex`, `text`, `sectionTitle`, `tokenCount`, `metadata`.
+   - **Text Index**: `chunk_text_idx` on `{ text: "text", sectionTitle: "text" }` with `weights: { sectionTitle: 5, text: 1 }` for non-AI keyword search.
+   - **AI-DAY Reservation**: Prominent header and schema comment blocks documenting future vector embedding field additions (`embedding: [Number]`) and Atlas Vector Search index.
+6. **`IngestionJob`** (`IngestionJob.js`):
+   - Fields: `documentId` (ref: Document), `status` (`queued`, `processing`, `completed`, `failed`), `attemptCount`, `errorDetails`, `startedAt`, `completedAt`.
+   - Index: Compound `{ status: 1, createdAt: -1 }`.
+7. **`Conversation`** (`Conversation.js`):
+   - Fields: `userId` (ref: User, optional for guests), `title`, `language`, `messages` (subdocument array: `role`, `content`, `timestamp`), `isActive`.
+   - Index: `{ userId: 1, updatedAt: -1 }`.
+8. **`Claim`** (`Claim.js`):
+   - Fields: `citizenId` (ref: User), `schemeId` (ref: Document), `status` (`draft`, `submitted`, `under_review`, `approved`, `rejected`), `evidenceDocuments`, `verificationNotes`.
+   - Index: Compound `{ citizenId: 1, status: 1 }`.
+9. **`AuditLog`** (`AuditLog.js`):
+   - Fields: `actorId` (ref: User), `actorRole`, `action`, `resourceType`, `resourceId`, `metadata`, `ipAddress`, `userAgent`, `createdAt`.
+   - **Security**: Pre-save hook automatically sanitizes `metadata` by stripping sensitive keys (`password`, `token`, `secret`, `authorization`, `creditCard`).
+   - **TTL Index**: Automatic document expiration index on `{ createdAt: 1 }` expiring after `AUDIT_LOG_TTL_DAYS` (default 180 days).
+
+### B. Index Synchronization Tooling
+
+- Script: `server/scripts/syncIndexes.js`
+- NPM Command: `npm run db:sync-indexes -w server`
+- Safely connects to Atlas, executes `Model.syncIndexes()` sequentially across all 9 models, logs created and dropped indexes with Pino, and exits cleanly.
+
+---
+
+## 5. Live Operational Status & Verification Matrix
+
+Both development servers are active and connected in daemon mode:
+
+- **Express Backend**: Listening on port `5000` (Node `--watch`)
+- **Vite Frontend**: Serving on port `5173` (with dev proxy `/api` &rarr; `:5000`)
+- **Database**: Connected to MongoDB Atlas cluster (`jansathi` database)
+
+### Comprehensive Verification Matrix
+
+| Test Suite / Target           | Verification Performed                     | Expected Result                                 | Actual Result                          | Status   |
+| :---------------------------- | :----------------------------------------- | :---------------------------------------------- | :------------------------------------- | :------- |
+| **Backend Liveness**          | `GET /api/health`                          | 200 OK, `database: "connected"`                 | `200 OK` (Uptime: 347s+, DB connected) | **PASS** |
+| **Frontend HTTP**             | `GET /` on `:5173`                         | 200 OK HTML payload                             | `200 OK` HTML rendered                 | **PASS** |
+| **Atlas DB Connectivity**     | SRV lookup with custom DNS fallback        | Clean handshake with replica set                | Connected without ECONNREFUSED         | **PASS** |
+| **Mongoose Models Indexing**  | `npm run db:sync-indexes -w server`        | All 9 collections indexed on Atlas              | All 9 collections synchronized         | **PASS** |
+| **Text Index Creation**       | `DocumentChunk.syncIndexes()`              | `chunk_text_idx` created on text + sectionTitle | Index confirmed in collection indexes  | **PASS** |
+| **TTL Index Creation**        | `AuditLog.syncIndexes()`                   | TTL index expiring at 180 days                  | `createdAt_1` TTL index active         | **PASS** |
+| **Sensitive Field Stripping** | `AuditLog` pre-save hook                   | Scrub passwords/tokens in metadata              | Subdocuments sanitized before save     | **PASS** |
+| **Model Enum Validation**     | `new User({ role: "invalid" }).validate()` | `ValidationError` on bad enum                   | Rejected with valid path error         | **PASS** |
+| **Model Valid Instantiation** | Valid instances of all 9 models            | Zero validation errors                          | All 9 models passed validation         | **PASS** |
+| **Code Style & Format**       | `npm run format:check`                     | Prettier compliance across all files            | All files match Prettier code style    | **PASS** |
+| **Static Code Analysis**      | `npm run lint`                             | ESLint 9 zero errors/warnings                   | 0 errors, 0 warnings                   | **PASS** |
+| **Frontend Bundle Build**     | `npm run build`                            | Clean Vite production distribution              | Bundled client in 3.20s                | **PASS** |
+
+---
+
+## 6. Complete Codebase Inventory
 
 ```
 jansathi-ai/
@@ -81,7 +134,7 @@ jansathi-ai/
 ├── .prettierrc                            # Prettier rules (singleQuote, semi, printWidth: 100)
 ├── eslint.config.js                       # ESLint 9 flat config (React hooks, Node globals, no-console)
 ├── package.json                           # Root workspace configuration and scripts
-├── present.md                             # Current project summary and milestone tracker
+├── present.md                             # Current project summary, localhost links, and milestone tracker
 ├── README.md                              # Project overview, prerequisites, and setup instructions
 ├── docs/
 │   ├── api-specification.md               # API protocol, error envelope, and rate limiting specs
@@ -104,16 +157,17 @@ jansathi-ai/
 │       │   └── api.js                     # Configured Axios client instance
 │       └── utils/.gitkeep                 # Client utility placeholders
 └── server/
-    ├── package.json                       # Server dependencies (Express, Mongoose, Zod, Pino, Helmet)
-    ├── scripts/.gitkeep                   # CLI/utility script placeholders
-    ├── storage/.gitkeep                   # Local attachment storage (gitignored)
+    ├── package.json                       # Server dependencies & scripts (Express, Mongoose, Zod, Pino)
+    ├── scripts/
+    │   └── syncIndexes.js                 # Database index synchronization CLI tool
+    ├── storage/                           # Local attachment storage (gitignored)
     └── src/
         ├── app.js                         # Express application factory with ordered middleware pipeline
         ├── server.js                      # Startup bootstrap, DB initialization, graceful shutdown
         ├── config/
-        │   ├── constants.js               # Frozen enums, ERROR_CODES, and PAGINATION constraints
+        │   ├── constants.js               # 17 frozen domain enums, ERROR_CODES, PAGINATION, Indian states
         │   ├── db.js                      # Mongoose connector, retry backoff, DNS SRV resolution
-        │   └── env.js                     # Zod-validated environment configuration
+        │   └── env.js                     # Zod-validated environment configuration (AUTO_INDEX, TTL)
         ├── controllers/
         │   └── healthController.js        # Liveness (/health) and readiness (/health/ready) handlers
         ├── jobs/.gitkeep                  # Background worker placeholders
@@ -124,7 +178,17 @@ jansathi-ai/
         │   ├── requestId.js               # Safe X-Request-Id UUID generator and header echo
         │   ├── security.js                # Helmet CSP, CORS allowlist, Mongo sanitize, HPP
         │   └── validate.js                # Zod request validation with safe request assignment
-        ├── models/.gitkeep                # Mongoose model placeholders (Phase 3+)
+        ├── models/
+        │   ├── AuditLog.js                # Immutable audit events with pre-save scrub & TTL index
+        │   ├── Claim.js                   # Scheme claim application model
+        │   ├── Conversation.js            # Citizen conversation history model
+        │   ├── Document.js                # Government schemes, acts, and circulars
+        │   ├── DocumentChunk.js           # Text chunks with compound text index (AI hooks reserved)
+        │   ├── DocumentPage.js            # Granular document page model
+        │   ├── IngestionJob.js            # Asynchronous ingestion status tracking
+        │   ├── Source.js                  # Government portal and gazette sources
+        │   ├── User.js                    # Citizens and administrators with roles
+        │   └── index.js                   # Barrel export for all 9 models
         ├── routes/
         │   ├── healthRoutes.js            # Health route definitions
         │   └── index.js                   # Root API router mounting /health
@@ -133,6 +197,7 @@ jansathi-ai/
         │   ├── ApiError.js                # Custom operational error class
         │   ├── asyncHandler.js            # Promise-resolving route controller wrapper
         │   ├── logger.js                  # Pino logger + Pino-HTTP with secrets redaction
+        │   ├── modelHelpers.js            # Shared toJSONPlugin for schema transformations
         │   └── response.js                # Unified sendSuccess, sendPaginated, sendError helpers
         └── validators/
             └── common.js                  # Shared Zod validators (objectId, pagination, trimmedString)
@@ -140,62 +205,29 @@ jansathi-ai/
 
 ---
 
-## 5. Live Operational Status & Verification Matrix
-
-Both development servers are currently active and running in background daemon mode:
-
-- **Express Backend**: Listening on port `5000` (Node `--watch`)
-- **Vite Frontend**: Serving on port `5173` (with dev proxy `/api` &rarr; `:5000`)
-- **Database**: Connected to MongoDB Atlas cluster (`jansathi` database)
-
-### Tested Scenarios & Proof of Correctness
-
-| Test Case                     | Method & Path                                              | Expected Result                                     | Verified Actual Result                                            | Status   |
-| ----------------------------- | ---------------------------------------------------------- | --------------------------------------------------- | ----------------------------------------------------------------- | -------- |
-| **Liveness Probe**            | `GET /api/health`                                          | 200 OK with `database: "connected"`, `status: "ok"` | Returns live uptime, UTC ISO date, and `"connected"`              | **PASS** |
-| **Readiness Probe (DB Up)**   | `GET /api/health/ready`                                    | 200 OK with `ready: true`, `database: "connected"`  | Returns 200 OK                                                    | **PASS** |
-| **Readiness Probe (DB Down)** | `GET /api/health/ready`                                    | 503 SERVICE_UNAVAILABLE                             | Returns 503 with standard error envelope                          | **PASS** |
-| **Malformed JSON**            | `POST /api/health` with invalid JSON                       | 400 VALIDATION_ERROR                                | Returns 400 with `code: "VALIDATION_ERROR"` & `requestId`         | **PASS** |
-| **Route 404 Fallback**        | `GET /api/unknown/endpoint`                                | 404 NOT_FOUND                                       | Returns 404 with structured JSON                                  | **PASS** |
-| **Payload Size Exceeded**     | `POST /api/health` with >100KB body                        | 413 PAYLOAD_TOO_LARGE                               | Returns 413 with `code: "PAYLOAD_TOO_LARGE"`                      | **PASS** |
-| **CORS Allowed Origin**       | `OPTIONS /api/health` with `Origin: http://localhost:5173` | 204 No Content, header echoed                       | `Access-Control-Allow-Origin: http://localhost:5173`              | **PASS** |
-| **CORS Blocked Origin**       | `GET /api/health` with `Origin: http://malicious.com`      | 403 FORBIDDEN                                       | Returns 403 with `code: "FORBIDDEN"` & `requestId`                | **PASS** |
-| **Rate Limiter (Burst)**      | 320 requests in sequence                                   | 429 RATE_LIMITED after limit                        | First 429 returned at request #298 with `retryAfterSeconds`       | **PASS** |
-| **Log Secrets Redaction**     | `Authorization: Bearer <secret>`                           | Credentials censored                                | Grep across log yielded 0 occurrences; replaced with `[REDACTED]` | **PASS** |
-| **Zod Query Validation**      | `validate({ query: paginationQuery })`                     | Coerces strings to integers                         | `{ page: "2", limit: "20" }` &rarr; `{ page: 2, limit: 20 }`      | **PASS** |
-| **Zod Field Errors**          | `validate` with invalid input                              | 400 with field-level details                        | Returns `[{ target: "body", path: "name", message: "..." }]`      | **PASS** |
-| **Linter Check**              | `npm run lint`                                             | 0 errors, 0 warnings                                | Clean exit (code 0)                                               | **PASS** |
-| **Formatter Check**           | `npm run format:check`                                     | All files match Prettier                            | Clean exit (code 0)                                               | **PASS** |
-| **Frontend Production Build** | `npm run build`                                            | 0 build errors                                      | Vite bundled client in 3.20s                                      | **PASS** |
-
----
-
-## 6. Security & Privacy Audit
+## 7. Security & Privacy Audit
 
 1. **Credentials Management**:
-   - The MongoDB Atlas URI with database username and password is stored solely in the local `.env` file.
-   - Verified that `.env` is absent from git tracking (`git ls-files .env` yields empty).
-2. **Logging Hygiene**:
-   - Pino redaction rules automatically scrub authorization headers, session cookies, passwords, tokens, and refresh tokens before emitting logs.
-   - Request URLs logged by `pino-http` strip query parameters to avoid logging query parameters.
-3. **Database Injection Protection**:
-   - All incoming bodies and query parameters are stripped of `$` and `.` operators via `express-mongo-sanitize`.
-4. **Header Hardening**:
-   - Helmet sets strict Content Security Policy directives disabling default script execution and disabling `iframe` embedding (`frameAncestors: ["'none'"]`).
+   - The MongoDB Atlas URI remains exclusively in the local `.env` file.
+   - Git tracking check confirmed `.env` is absent from git indexing (`git ls-files | Select-String "env"` lists only `.env.example` and `server/src/config/env.js`).
+2. **Audit Log Privacy**:
+   - The `AuditLog` schema enforces an automated pre-save sanitization routine that strips `password`, `token`, `secret`, `authorization`, and `creditCard` from any audit metadata.
+   - `AuditLog` records automatically expire after 180 days via a MongoDB native TTL index, complying with privacy retention limits.
+3. **AI Search Boundaries**:
+   - `DocumentChunk` strictly utilizes MongoDB's native full-text index (`chunk_text_idx`) for keyword search.
+   - No mock embeddings or uncalibrated vector fields are stored.
 
 ---
 
-## 7. Next Actions
+## 8. Next Actions & Instructions
 
-The codebase is in a stable, verified state and ready to be committed:
+Phase 3 is complete and ready to be committed to the repository:
 
 ```bash
 git add .
-git commit -m "feat(phase-2): server core, security middleware, and mongodb atlas connection"
+git commit -m "feat(phase-3): mongoose models, text search index, and sync-indexes tooling"
 ```
 
-Once you reply with:
+To proceed to **Phase 4: Scheme Catalog Core & CRUD**, simply reply with:
 
-> **`Phase 2 confirmed`**
-
-we will transition directly into **Phase 3: Authentication & User Model** (citizen/admin schemas, password hashing, JWT generation, and protected route middlewares).
+> **`Phase 3 confirmed`**

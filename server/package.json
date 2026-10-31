@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
-    "lint": "eslint src"
+    "lint": "eslint src",
+    "db:sync-indexes": "node scripts/syncIndexes.js"
   },
   "dependencies": {
     "cors": "^2.8.5",

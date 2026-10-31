@@ -29,6 +29,11 @@ const envSchema = z.object({
   RATE_LIMIT_AUTH_MAX: z.coerce.number().default(10),
   RATE_LIMIT_AI_PER_MIN: z.coerce.number().default(20),
   RATE_LIMIT_UPLOAD_PER_HOUR: z.coerce.number().default(10),
+  AUDIT_LOG_TTL_DAYS: z.coerce.number().int().positive().default(180),
+  AUTO_INDEX: z
+    .union([z.boolean(), z.string()])
+    .transform((val) => (typeof val === 'boolean' ? val : val !== 'false'))
+    .default(true),
 });
 
 const parsed = envSchema.safeParse(process.env);
