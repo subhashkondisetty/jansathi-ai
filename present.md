@@ -35,21 +35,21 @@ Milestones completed to date:
 
 ## 3. 13-Phase Milestone Roadmap
 
-| Phase       | Milestone Name                    | Status                                | Key Highlights                                                                                                                       |
-| :---------- | :-------------------------------- | :------------------------------------ | :----------------------------------------------------------------------------------------------------------------------------------- |
-| **Phase 1** | **Monorepo Foundation**           | **DONE & COMMITTED** (`309a4cc`)      | Workspaces (`client`, `server`), ESLint 9 flat config, Prettier, Vite, Tailwind CSS 3, Express scaffolding, `/api/health`            |
-| **Phase 2** | **Server Core & DB Integration**  | **DONE & COMMITTED** (`60b0899`)      | MongoDB Atlas cluster connected, Pino logger + redaction, Helmet CSP, CORS allowlist, Rate limiters, Zod validators, Readiness probe |
-| **Phase 3** | **Mongoose Models & DB Indexes**  | **DONE & COMMITTED** (`6f7e073`)      | 9 domain models, 17 system enums, text search index, TTL audit log index, `npm run db:sync-indexes` tooling                          |
-| **Phase 4** | **Auth, Roles & User Management** | **DONE & COMMITTED** (`d674275`)      | JWT HS256, bcryptjs, constant-time dummy hash, citizen registration/login, profile GET/PUT, admin CLI, audit logging                 |
-| **Phase 5** | **Source CRUD, Upload & Catalog** | **DONE & COMMITTED** (`35e281e`)      | Multer upload, magic bytes, SHA-256 dedupe, catalog listing, facets aggregation, source CRUD, SSRF prevention                        |
-| Phase 6     | Document Ingestion Pipeline       | Pending                               | PDF/HTML text extraction, section chunking, ingestion queue worker                                                                   |
-| Phase 7     | Admin Governance & Review         | Pending                               | Document review, audit logs, scheme approval workflows                                                                               |
-| Phase 8     | Citizen Portal UI                 | Pending                               | Scheme discovery, filtering, bookmarking, mobile-first design                                                                        |
-| Phase 9     | AI Hook Architecture (Stubs)      | Pending                               | 501 NOT_IMPLEMENTED contracts for RAG, embeddings, and chat                                                                          |
-| Phase 10    | Notifications & Civic Alerts      | Pending                               | Circulars, acts, notifications feeds, urgency tags                                                                                   |
-| Phase 11    | Multilingual Meta Framework       | Pending                               | Language enums (`en`, `te`, `hi`, `ta`), UI localization scaffolding                                                                 |
-| Phase 12    | Eligibility Checklist Engine      | Pending                               | Deterministic non-AI rule evaluator for scheme eligibility                                                                           |
-| Phase 13    | Final Polish & Production Deploy  | Pending                               | Render/Atlas production build, Docker, demo script                                                                                   |
+| Phase       | Milestone Name                    | Status                           | Key Highlights                                                                                                                       |
+| :---------- | :-------------------------------- | :------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------- |
+| **Phase 1** | **Monorepo Foundation**           | **DONE & COMMITTED** (`309a4cc`) | Workspaces (`client`, `server`), ESLint 9 flat config, Prettier, Vite, Tailwind CSS 3, Express scaffolding, `/api/health`            |
+| **Phase 2** | **Server Core & DB Integration**  | **DONE & COMMITTED** (`60b0899`) | MongoDB Atlas cluster connected, Pino logger + redaction, Helmet CSP, CORS allowlist, Rate limiters, Zod validators, Readiness probe |
+| **Phase 3** | **Mongoose Models & DB Indexes**  | **DONE & COMMITTED** (`6f7e073`) | 9 domain models, 17 system enums, text search index, TTL audit log index, `npm run db:sync-indexes` tooling                          |
+| **Phase 4** | **Auth, Roles & User Management** | **DONE & COMMITTED** (`d674275`) | JWT HS256, bcryptjs, constant-time dummy hash, citizen registration/login, profile GET/PUT, admin CLI, audit logging                 |
+| **Phase 5** | **Source CRUD, Upload & Catalog** | **DONE & COMMITTED** (`35e281e`) | Multer upload, magic bytes, SHA-256 dedupe, catalog listing, facets aggregation, source CRUD, SSRF prevention                        |
+| Phase 6     | Document Ingestion Pipeline       | Pending                          | PDF/HTML text extraction, section chunking, ingestion queue worker                                                                   |
+| Phase 7     | Admin Governance & Review         | Pending                          | Document review, audit logs, scheme approval workflows                                                                               |
+| Phase 8     | Citizen Portal UI                 | Pending                          | Scheme discovery, filtering, bookmarking, mobile-first design                                                                        |
+| Phase 9     | AI Hook Architecture (Stubs)      | Pending                          | 501 NOT_IMPLEMENTED contracts for RAG, embeddings, and chat                                                                          |
+| Phase 10    | Notifications & Civic Alerts      | Pending                          | Circulars, acts, notifications feeds, urgency tags                                                                                   |
+| Phase 11    | Multilingual Meta Framework       | Pending                          | Language enums (`en`, `te`, `hi`, `ta`), UI localization scaffolding                                                                 |
+| Phase 12    | Eligibility Checklist Engine      | Pending                          | Deterministic non-AI rule evaluator for scheme eligibility                                                                           |
+| Phase 13    | Final Polish & Production Deploy  | Pending                          | Render/Atlas production build, Docker, demo script                                                                                   |
 
 ---
 
