@@ -11,6 +11,7 @@ import {
   DOC_TYPE_OPTIONS,
   DOC_CATEGORY_OPTIONS,
 } from '../config/constants.js';
+import { env } from '../config/env.js';
 import { sendSuccess } from '../utils/response.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 
@@ -28,6 +29,10 @@ export const getOptions = asyncHandler(async (_req, res) => {
       states: INDIAN_STATES_AND_UTS,
       docTypes: DOC_TYPE_OPTIONS,
       docCategories: DOC_CATEGORY_OPTIONS,
+      limits: {
+        maxUploadMb: env.MAX_UPLOAD_MB,
+        maxPdfPages: env.MAX_PDF_PAGES,
+      },
     },
     undefined,
     200

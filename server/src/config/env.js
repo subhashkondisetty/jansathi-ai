@@ -36,6 +36,12 @@ const envSchema = z.object({
   ADMIN_NAME: z.string().optional(),
   ADMIN_PASSWORD: z.string().min(8).optional(),
   AUDIT_LOG_TTL_DAYS: z.coerce.number().int().positive().default(180),
+  MAX_UPLOAD_MB: z.coerce.number().positive().default(10),
+  MAX_PDF_PAGES: z.coerce.number().positive().default(300),
+  STORAGE_DIR: z
+    .string()
+    .default(path.resolve(__dirname, '../../storage/uploads'))
+    .transform((dir) => path.resolve(dir)),
   AUTO_INDEX: z
     .union([z.boolean(), z.string()])
     .transform((val) => (typeof val === 'boolean' ? val : val !== 'false'))
