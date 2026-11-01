@@ -22,8 +22,7 @@ export const validate = ({ body, query, params } = {}) => {
       if (!result.success) {
         result.error.issues.forEach((issue) => {
           details.push({
-            target: 'body',
-            path: issue.path.length > 0 ? issue.path.join('.') : 'body',
+            field: issue.path.length > 0 ? issue.path.join('.') : 'body',
             message: issue.message,
           });
         });
@@ -37,8 +36,7 @@ export const validate = ({ body, query, params } = {}) => {
       if (!result.success) {
         result.error.issues.forEach((issue) => {
           details.push({
-            target: 'query',
-            path: issue.path.length > 0 ? issue.path.join('.') : 'query',
+            field: issue.path.length > 0 ? issue.path.join('.') : 'query',
             message: issue.message,
           });
         });
@@ -52,8 +50,7 @@ export const validate = ({ body, query, params } = {}) => {
       if (!result.success) {
         result.error.issues.forEach((issue) => {
           details.push({
-            target: 'params',
-            path: issue.path.length > 0 ? issue.path.join('.') : 'params',
+            field: issue.path.length > 0 ? issue.path.join('.') : 'params',
             message: issue.message,
           });
         });

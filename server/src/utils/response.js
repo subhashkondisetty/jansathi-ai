@@ -15,7 +15,7 @@ export const sendPaginated = (res, items, { page, limit, total }, status = 200) 
   const pageNum = Math.max(1, Number(page) || 1);
   const limitNum = Math.max(1, Number(limit) || 12);
   const totalNum = Math.max(0, Number(total) || 0);
-  const totalPages = Math.ceil(totalNum / limitNum) || 1;
+  const totalPages = totalNum === 0 ? 0 : Math.ceil(totalNum / limitNum);
 
   return sendSuccess(
     res,

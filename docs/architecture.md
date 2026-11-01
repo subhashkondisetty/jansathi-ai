@@ -80,3 +80,79 @@ stateDiagram-v2
 | **Scanned Image** (`OCR_REQUIRED`)                         | **No**     | Immediate failure                                                                          | `needs_ocr`                      |
 | **Unsupported Content** (`UNSUPPORTED_CONTENT`)            | **No**     | Immediate failure                                                                          | `failed`                         |
 | **Max Retries Exceeded**                                   | **No**     | Marked `failed` with code `MAX_RETRIES_EXCEEDED`                                           | `failed`                         |
+
+---
+
+## 4. Where AI Plugs In (AI Integration Architecture)
+
+JanSathi AI was architected from inception as a decoupled, modular system where the core non-AI MERN data layer functions independently. In Phase 7, stable hook shells and interfaces are established across six services. When AI capabilities are enabled on "AI-Day", they replace these stubs without modifying database schemas, API routes, or client-facing contracts.
+
+```mermaid
+flowchart TD
+    subgraph Client["Citizen & Admin Client"]
+        A1["GET /api/search"]
+        A2["POST /api/ai/ask"]
+        A3["POST /api/ai/eligibility"]
+        A4["POST /api/verify/claim"]
+        A5["GET /api/history"]
+    end
+
+    subgraph Security["API Gateway & Middleware"]
+        B1["authenticate (JWT HS256)"]
+        B2["createAiLimiter (User-keyed Rate Limit)"]
+        B3["validate (Zod Strict Schemas)"]
+    end
+
+    subgraph Services["Core & AI Hook Services"]
+        C1["retrievalService\n(Text Search -> Vector Swap Point)"]
+        C2["ragService\n(Grounding & Synthesis)"]
+        C3["eligibilityService\n(Multi-Rule Evaluator)"]
+        C4["verificationService\n(Stance Classifier)"]
+        C5["conversationService\n(Session & Message Limits)"]
+        C6["aiService & embeddingService\n(LLM & Embedding Models)"]
+    end
+
+    subgraph Storage["MongoDB Atlas"]
+        D1[("DocumentChunk\n(text index + Atlas Vector Search)")]
+        D2[("Conversation\n(max 200 messages)")]
+        D3[("Claim\n(verification records)")]
+        D4[("AuditLog\n(tamper-evident TTL logs)")]
+    end
+
+    A1 --> B1 --> C1 --> D1
+    A5 --> B1 --> C5 --> D2
+
+    A2 --> B1 --> B2 --> B3 --> C2
+    A3 --> B1 --> B2 --> B3 --> C3
+    A4 --> B1 --> B2 --> B3 --> C4
+
+    C2 --> C1
+    C2 --> C6
+    C2 --> C5
+    C3 --> C1
+    C3 --> C6
+    C4 --> C1
+    C4 --> C6
+    C4 --> D3
+```
+
+### Specific Component Plug-In Points:
+
+1. **`retrievalService` (Search Swap Point)**:
+   - **Current (Phase 7)**: MongoDB `$text` search over `DocumentChunk` with `score: { $meta: 'textScore' }`, metadata filtering, and strict visibility scoping.
+   - **AI-Day Swap**: Incorporates `$vectorSearch` alongside `$text` to perform Reciprocal Rank Fusion (RRF) hybrid retrieval. The external interface `retrieve({ query, filters, limit, user })` remains identical.
+2. **`embeddingService`**:
+   - **Current (Phase 7)**: Shell exporting `embedTexts()` and `embedQuery()`, throwing `NotImplementedError`.
+   - **AI-Day Swap**: Generates dense vectors (e.g. 768-dim `text-embedding-004`) for background chunks during the `chunking` ingestion stage and for queries in `retrievalService`.
+3. **`aiService`**:
+   - **Current (Phase 7)**: Shell exporting `generateStructured()` and `translate()`.
+   - **AI-Day Swap**: Connects to the LLM runtime with forced JSON Schema validation (`responseSchema`) and few-shot civic system prompts.
+4. **`ragService`**:
+   - **Current (Phase 7)**: Shell throwing `NotImplementedError('ragService.answerQuestion')`.
+   - **AI-Day Swap**: Retrieves relevant chunks, verifies grounding against source URLs, builds structured answer sections (`summary`, `eligibility`, `benefits`, `documents`, `deadline`, `applicationProcess`), and appends to `conversationService`.
+5. **`eligibilityService`**:
+   - **Current (Phase 7)**: Shell throwing `NotImplementedError('eligibilityService.checkEligibility')`.
+   - **AI-Day Swap**: Extracts structured eligibility clauses from official scheme documents and evaluates applicant attributes against them.
+6. **`verificationService`**:
+   - **Current (Phase 7)**: Shell throwing `NotImplementedError('verificationService.verifyClaim')`.
+   - **AI-Day Swap**: Evaluates public claims against official circulars, determines factual stance (`supported`, `contradicted`, `unverified`), and saves audit records to `claimService`.

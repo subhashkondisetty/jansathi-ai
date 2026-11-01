@@ -318,3 +318,389 @@ Retrieves selectable reference options and upload limits for clients.
 - **Access**: Administrator
 - **Response 200 OK**: Resets job state to `queued`, attempts to `0`, increments `manualRetries`, resets document to `pending`, and kicks the runner.
 - **Response 409 CONFLICT**: Returned if the target job is not in `failed` status.
+
+---
+
+### 8. Document Keyword Search
+
+#### Keyword Search Across Civic Chunks
+
+- **Method**: `GET`
+- **Path**: `/api/search`
+- **Access**: Authenticated
+- **Privacy Guarantee**: Search queries are strictly never stored, logged, or tracked in the database.
+- **Query Params**:
+  - `q` (required, 2-200 chars): Query keyword string.
+  - `category` (optional): Filter by document category (`DOC_CATEGORIES`).
+  - `docType` (optional): Filter by document type (`DOC_TYPES`).
+  - `issuingAuthority` (optional): Filter by issuing authority string.
+  - `language` (optional): Filter by document language.
+  - `documentId` (optional): Scope search to specific document ObjectId.
+  - `publishedFrom` (optional): ISO date string.
+  - `publishedTo` (optional): ISO date string.
+  - `includeOlderVersions` (optional, boolean): Include deprecated version chunks (default `false`).
+  - `page` (optional, integer, default 1).
+  - `limit` (optional, integer, default 8, max 20).
+- **Response 200 OK**:
+  ```json
+  {
+    "success": true,
+    "data": [
+      {
+        "chunkId": "6ae6c227f169df653a0dbb70",
+        "documentId": "6ae6c226f169df653a0dbb5e",
+        "score": 1.452,
+        "snippet": "...National Scholarship Scheme 2026. Financial assistance of Rs 50,000 per annum for meritorious students...",
+        "title": "National Scholarship Guidelines 2026",
+        "issuingAuthority": "Ministry of Social Justice",
+        "sourceUrl": "https://scholarships.gov.in/guidelines.pdf",
+        "category": "scholarship",
+        "docType": "scheme",
+        "language": "en",
+        "pageStart": 1,
+        "pageEnd": 1,
+        "sectionHeading": "Eligibility Overview",
+        "publishedAt": "2026-08-15T00:00:00.000Z",
+        "lastUpdatedAt": null,
+        "fetchedAt": "2026-11-01T04:37:59.216Z",
+        "version": 1,
+        "isLatest": true
+      }
+    ],
+    "meta": {
+      "page": 1,
+      "limit": 8,
+      "total": 1,
+      "totalPages": 1
+    }
+  }
+  ```
+
+---
+
+### 9. Conversation History
+
+#### Create Conversation
+
+- **Method**: `POST`
+- **Path**: `/api/history`
+- **Access**: Authenticated
+- **Body**:
+  ```json
+  {
+    "title": "Scholarship Eligibility Inquiry",
+    "mode": "ask",
+    "language": "en",
+    "documentId": "6ae6c226f169df653a0dbb5e"
+  }
+  ```
+- **Response 201 Created**: Returns the initialized Conversation object with empty `messages` array.
+
+#### List User Conversations
+
+- **Method**: `GET`
+- **Path**: `/api/history`
+- **Access**: Authenticated (User-scoped)
+- **Query Params**: `mode` (`ask`|`eligibility`|`document`), `page` (default 1), `limit` (default 20, max 100)
+- **Response 200 OK**:
+  ```json
+  {
+    "success": true,
+    "data": [
+      {
+        "id": "6724c3a19ab1234567890abc",
+        "title": "Scholarship Eligibility Inquiry",
+        "mode": "ask",
+        "language": "en",
+        "documentId": "6ae6c226f169df653a0dbb5e",
+        "messageCount": 2,
+        "lastMessagePreview": "What is the annual income limit for the scheme?",
+        "createdAt": "2026-11-01T05:00:00.000Z",
+        "updatedAt": "2026-11-01T05:01:30.000Z"
+      }
+    ],
+    "meta": {
+      "page": 1,
+      "limit": 20,
+      "total": 1,
+      "totalPages": 1
+    }
+  }
+  ```
+
+#### Get Conversation Details
+
+- **Method**: `GET`
+- **Path**: `/api/history/:id`
+- **Access**: Authenticated (Owner-only; 404 for other users' IDs)
+- **Response 200 OK**: Complete conversation document including all messages and citation arrays.
+
+#### Append User Message
+
+- **Method**: `POST`
+- **Path**: `/api/history/:id/messages`
+- **Access**: Authenticated (Owner-only)
+- **Constraint**: Role is strictly forced to `"user"`; client cannot pass role or citations. Hard limit of 200 messages per conversation.
+- **Body**:
+  ```json
+  {
+    "content": "Can final year students apply for this grant?"
+  }
+  ```
+- **Response 200 OK**: Updated Conversation document.
+- **Response 409 CONFLICT**: Returned when the 200-message limit is reached.
+
+#### Delete Conversation
+
+- **Method**: `DELETE`
+- **Path**: `/api/history/:id`
+- **Access**: Authenticated (Owner-only)
+- **Audit**: Emits `history.delete` audit record.
+- **Response 200 OK**: `{ "success": true, "data": { "deleted": true } }`
+
+#### Clear All Conversations
+
+- **Method**: `DELETE`
+- **Path**: `/api/history`
+- **Access**: Authenticated
+- **Audit**: Emits `history.clear` audit record with `deletedCount`.
+- **Response 200 OK**: `{ "success": true, "data": { "deletedCount": 4 } }`
+
+---
+
+### 10. AI Hook Architecture & Response Contract
+
+In Phase 7, all AI generative and inference endpoints authenticate, rate-limit, and validate request payloads, before delegating to service shells that throw `NotImplementedError`, returning HTTP `501 NOT_IMPLEMENTED`. Absolutely zero mock or fake data is returned.
+
+#### Capability Status Probe
+
+- **Method**: `GET`
+- **Path**: `/api/ai/status`
+- **Access**: Authenticated
+- **Response 200 OK**:
+  ```json
+  {
+    "success": true,
+    "data": {
+      "connected": false,
+      "features": {
+        "ask": false,
+        "eligibility": false,
+        "verify": false
+      }
+    }
+  }
+  ```
+
+#### AI Question-Answering Shell
+
+- **Method**: `POST`
+- **Path**: `/api/ai/ask`
+- **Access**: Authenticated (Rate limited via user-keyed `aiLimiter`)
+- **Request Body**:
+  ```json
+  {
+    "question": "What is the family income limit for the National Scholarship Scheme?",
+    "language": "en",
+    "conversationId": "6724c3a19ab1234567890abc",
+    "documentId": "6ae6c226f169df653a0dbb5e",
+    "filters": {
+      "category": "scholarship",
+      "docType": "scheme",
+      "issuingAuthority": "Ministry of Social Justice"
+    }
+  }
+  ```
+- **Phase 7 Response 501 NOT_IMPLEMENTED**:
+  ```json
+  {
+    "success": false,
+    "error": {
+      "code": "NOT_IMPLEMENTED",
+      "message": "ragService.answerQuestion is not implemented yet"
+    }
+  }
+  ```
+
+#### AI Eligibility Check Shell
+
+- **Method**: `POST`
+- **Path**: `/api/ai/eligibility`
+- **Access**: Authenticated (Rate limited via user-keyed `aiLimiter`)
+- **Request Body**:
+  ```json
+  {
+    "query": "scholarships for undergraduate students",
+    "documentIds": ["6ae6c226f169df653a0dbb5e"],
+    "applicant": {
+      "educationLevel": "undergraduate",
+      "courseOrOccupation": "B.Tech Computer Science",
+      "state": "Telangana",
+      "district": "Hyderabad",
+      "userCategory": "student",
+      "annualFamilyIncomeRange": "1_to_2_5_lakh",
+      "socialCategory": "General"
+    },
+    "language": "en"
+  }
+  ```
+- **Phase 7 Response 501 NOT_IMPLEMENTED**:
+  ```json
+  {
+    "success": false,
+    "error": {
+      "code": "NOT_IMPLEMENTED",
+      "message": "eligibilityService.checkEligibility is not implemented yet"
+    }
+  }
+  ```
+
+#### Civic Claim Verification Shell
+
+- **Method**: `POST`
+- **Path**: `/api/verify/claim`
+- **Access**: Authenticated (Rate limited via user-keyed `aiLimiter`)
+- **Request Body**:
+  ```json
+  {
+    "claim": "The government is giving Rs 10,000 to all college students under a new 2026 circular.",
+    "language": "en"
+  }
+  ```
+- **Phase 7 Response 501 NOT_IMPLEMENTED**:
+  ```json
+  {
+    "success": false,
+    "error": {
+      "code": "NOT_IMPLEMENTED",
+      "message": "verificationService.verifyClaim is not implemented yet"
+    }
+  }
+  ```
+
+---
+
+### 11. Authoritative AI Response Contract (Production Schema)
+
+When AI services are implemented in subsequent phases, responses will conform to the following contract (all fields camelCase; all responses wrapped in `{success:true, data}`):
+
+#### Data Types
+
+- **Citation**: `{ id: "c1", documentId, chunkId, title, issuingAuthority, sourceUrl, pageStart, pageEnd, sectionHeading|null, publishedAt|null, lastUpdatedAt|null, fetchedAt, quote }` _(quote = short verbatim excerpt, max 300 chars)_
+- **Section**: `{ text, bullets: string[], status: "confirmed"|"not_found"|"conflicting"|"unverified", citationIds: string[] }`
+
+#### Endpoint Contracts
+
+1. **POST /api/ai/ask response data**:
+
+   ```typescript
+   {
+     conversationId: string;
+     messageId: string;
+     language: string;
+     answer: {
+       summary: Section;
+       eligibility: Section | null;
+       benefits: Section | null;
+       documents: Section | null;
+       deadline: Section | null;
+       applicationProcess: Section | null;
+       limitations: string[];
+     };
+     citations: Citation[];
+     relatedQuestions: string[];
+     retrieval: {
+       strategy: "text" | "vector" | "hybrid";
+       resultCount: number;
+     };
+     disclaimer: string;
+   }
+   ```
+
+   _(The UI derives official sources exclusively from `citations`)_
+
+2. **POST /api/ai/eligibility response data**:
+
+   ```typescript
+   {
+     language: string;
+     results: Array<{
+       documentId: string | null;
+       schemeTitle: string;
+       sourceUrl: string | null;
+       overall: "likely_match" | "possible_match" | "not_match" | "insufficient_information";
+       criteria: Array<{
+         id: string;
+         requirement: string;
+         status: "match" | "no_match" | "unknown";
+         applicantValue: string | number | null;
+         reason: string;
+         citationIds: string[];
+       }>;
+       deadline: {
+         text: string | null;
+         status: "confirmed" | "not_confirmed";
+         citationIds: string[];
+       };
+       notes: string[];
+     }>;
+     citations: Citation[];
+     disclaimer: string;
+   }
+   ```
+
+   _(Never claim guaranteed eligibility; always declare official criteria)_
+
+3. **POST /api/verify/claim response data**:
+
+   ```typescript
+   {
+     claimId: string;
+     assessment: "supported" | "contradicted" | "unverified";
+     explanation: string;
+     evidence: Array<{
+       citationId: string;
+       stance: "supports" | "contradicts" | "related";
+     }>;
+     citations: Citation[];
+     limitations: string[];
+     disclaimer: string;
+   }
+   ```
+
+4. **GET /api/ai/status response data**:
+
+   ```typescript
+   {
+     connected: boolean;
+     features: {
+       ask: boolean;
+       eligibility: boolean;
+       verify: boolean;
+     }
+   }
+   ```
+
+   _(Derived from each service's `isAvailable()`; all false in Phase 7)_
+
+5. **501 Error Envelope (Universal Unimplemented Body)**:
+   ```json
+   {
+     "success": false,
+     "error": {
+       "code": "NOT_IMPLEMENTED",
+       "message": "<service>.<method> is not implemented yet"
+     }
+   }
+   ```
+
+---
+
+### 12. How the Frontend Should Treat 501 Responses
+
+The React frontend UI must gracefully handle HTTP 501 `NOT_IMPLEMENTED` responses as standard anticipated lifecycle states:
+
+1. **Feature Detection via Status Probe**: The client should invoke `GET /api/ai/status` on mount or view load. If `connected === false` or a specific feature flag (`features.ask`, `features.eligibility`, `features.verify`) is `false`, the UI displays an informative "Coming Soon in AI Integration" badge or friendly explanation rather than treating it as a system outage.
+2. **Explicit 501 Catching in API Wrappers**: Client Axios services should intercept responses where `error.response?.status === 501`. Instead of generic toast errors, render an accessible Banner/Alert explaining that AI reasoning for this module is currently in progress.
+3. **Disabled Input States**: When an AI service is not available, form submission buttons may be decorated with a tooltip or descriptive aria-label indicating that non-AI search (`/api/search`) and official document downloads (`/api/documents`) remain fully functional.
+4. **No Broken Conversation State**: Because 501 responses guarantee that nothing is persisted server-side (no phantom conversations or dummy claims are created), the frontend state remains clean and uncorrupted.

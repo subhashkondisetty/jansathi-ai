@@ -10,4 +10,11 @@ export class ApiError extends Error {
   }
 }
 
+export class NotImplementedError extends ApiError {
+  constructor(feature = 'Feature') {
+    super(501, 'NOT_IMPLEMENTED', `${feature} is not implemented yet`);
+    this.name = 'NotImplementedError';
+  }
+}
+
 export default ApiError;

@@ -16,7 +16,13 @@ export const errorHandler = (err, req, res, next) => {
     status = err.status || 500;
     code = err.code || 'INTERNAL_ERROR';
     message = err.message;
-    details = err.details;
+    details = Array.isArray(err.details)
+      ? err.details.map((d) =>
+          d && typeof d === 'object' && d.path && !d.field
+            ? { field: d.path, message: d.message }
+            : d
+        )
+      : err.details;
   }
   // 2. Zod validation error
   else if (err instanceof ZodError || err.name === 'ZodError') {
@@ -24,7 +30,7 @@ export const errorHandler = (err, req, res, next) => {
     code = 'VALIDATION_ERROR';
     message = 'Validation error';
     details = err.issues?.map((issue) => ({
-      path: issue.path.join('.'),
+      field: issue.path.join('.'),
       message: issue.message,
     }));
   }
@@ -34,7 +40,7 @@ export const errorHandler = (err, req, res, next) => {
     code = 'VALIDATION_ERROR';
     message = 'Database validation failed';
     details = Object.values(err.errors || {}).map((e) => ({
-      path: e.path,
+      field: e.path,
       message: e.message,
     }));
   }
@@ -45,7 +51,7 @@ export const errorHandler = (err, req, res, next) => {
     message = `Invalid value for ${err.path}: ${err.value}`;
     details = [
       {
-        path: err.path,
+        field: err.path,
         message: `Invalid value for field ${err.path}`,
       },
     ];
@@ -86,8 +92,8 @@ export const errorHandler = (err, req, res, next) => {
     message = 'Request payload exceeds maximum allowable limit';
   }
 
-  // Mask internal 500 error messages in production
-  if (status >= 500) {
+  // Mask internal 500 error messages in production (501 NOT_IMPLEMENTED is an explicit contract)
+  if (status >= 500 && status !== 501) {
     logger.error(
       {
         err,
@@ -102,6 +108,10 @@ export const errorHandler = (err, req, res, next) => {
       message = 'Internal server error';
       details = undefined;
     }
+  }
+
+  if (status === 501) {
+    details = undefined;
   }
 
   return sendError(

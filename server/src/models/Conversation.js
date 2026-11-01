@@ -97,6 +97,7 @@ const conversationSchema = new mongoose.Schema(
 
 // Indexes
 conversationSchema.index({ userId: 1, updatedAt: -1 });
+conversationSchema.index({ userId: 1, mode: 1, updatedAt: -1 });
 
 // Apply shared plugins
 conversationSchema.plugin(toJSONPlugin);

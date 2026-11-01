@@ -55,6 +55,17 @@ export const aiLimiter = rateLimit({
   handler: createRateLimitHandler(1 * 60 * 1000),
 });
 
+export const createAiLimiter = (options = {}) =>
+  rateLimit({
+    windowMs: 1 * 60 * 1000,
+    limit: env.RATE_LIMIT_AI_PER_MIN,
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+    keyGenerator: userOrIpKeyGenerator,
+    handler: createRateLimitHandler(1 * 60 * 1000),
+    ...options,
+  });
+
 // Upload endpoints limiter (1 hour window, keyed by user ID or IP)
 export const uploadLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
