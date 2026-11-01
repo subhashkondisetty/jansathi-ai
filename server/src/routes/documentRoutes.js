@@ -19,6 +19,7 @@ import {
   uploadMetadataSchema,
   listDocumentsQuerySchema,
   documentPagesQuerySchema,
+  documentIdParamSchema,
 } from '../validators/documentValidators.js';
 
 const router = Router();
@@ -36,8 +37,12 @@ router.post(
 
 router.get('/facets', getFacets);
 router.get('/', validate({ query: listDocumentsQuerySchema }), listDocuments);
-router.get('/:id', getDocumentById);
-router.get('/:id/pages', validate({ query: documentPagesQuerySchema }), getDocumentPages);
-router.delete('/:id', deleteDocument);
+router.get('/:id', validate({ params: documentIdParamSchema }), getDocumentById);
+router.get(
+  '/:id/pages',
+  validate({ params: documentIdParamSchema, query: documentPagesQuerySchema }),
+  getDocumentPages
+);
+router.delete('/:id', validate({ params: documentIdParamSchema }), deleteDocument);
 
 export default router;

@@ -4,30 +4,58 @@
 
 import { z } from 'zod';
 import { SOURCE_TYPES, DOC_TYPES, DOC_CATEGORIES } from '../config/constants.js';
+import { objectId } from './common.js';
+
+export const sourceIdParamSchema = z.object({
+  id: objectId,
+});
 
 /**
- * Checks whether a hostname matches private, loopback, or link-local IP patterns.
+ * Checks whether a hostname matches private, loopback, link-local, cloud metadata, or reserved IP patterns.
  *
  * @param {string} hostname - Hostname from parsed URL.
- * @returns {boolean} True if hostname is private or loopback.
+ * @returns {boolean} True if hostname is disallowed.
  */
 export const isDisallowedHostname = (hostname) => {
-  const lower = (hostname || '').toLowerCase();
-  if (lower === 'localhost' || lower === '127.0.0.1' || lower === '::1') {
+  const raw = (hostname || '').toLowerCase();
+  const lower = raw.replace(/^\[|\]$/g, '');
+
+  if (
+    lower === 'localhost' ||
+    lower === '127.0.0.1' ||
+    lower === '0.0.0.0' ||
+    lower === '::1' ||
+    lower === '::' ||
+    lower === 'metadata.google.internal' ||
+    lower === 'instance-data'
+  ) {
     return true;
   }
 
-  // IPv4 private ranges (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 169.254.0.0/16, 127.0.0.0/8)
+  // IPv6 loopback, link-local, unique-local, and IPv4-mapped IPv6 ranges
+  if (
+    lower.startsWith('fe80:') ||
+    lower.startsWith('fc00:') ||
+    (lower.startsWith('fd') && lower.includes(':')) ||
+    lower.startsWith('::ffff:')
+  ) {
+    return true;
+  }
+
+  // IPv4 private, loopback, link-local, carrier-grade NAT, and reserved ranges
   const ipv4Regex = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
   const match = lower.match(ipv4Regex);
   if (match) {
-    const [, a, b] = match.map(Number);
-    if (a === 127) return true; // loopback
-    if (a === 10) return true; // Class A private
-    if (a === 172 && b >= 16 && b <= 31) return true; // Class B private
-    if (a === 192 && b === 168) return true; // Class C private
-    if (a === 169 && b === 254) return true; // Link-local
-    if (a === 0) return true;
+    const [, a, b, c, d] = match.map(Number);
+    if ([a, b, c, d].some((p) => p > 255)) return true;
+    if (a === 0) return true; // Current network
+    if (a === 127) return true; // Loopback (127.0.0.0/8)
+    if (a === 10) return true; // Class A private (10.0.0.0/8)
+    if (a === 172 && b >= 16 && b <= 31) return true; // Class B private (172.16.0.0/12)
+    if (a === 192 && b === 168) return true; // Class C private (192.168.0.0/16)
+    if (a === 169 && b === 254) return true; // Link-local / Cloud metadata (169.254.0.0/16)
+    if (a === 100 && b >= 64 && b <= 127) return true; // Carrier-grade NAT (100.64.0.0/10)
+    if (a >= 224) return true; // Multicast and reserved
   }
 
   return false;

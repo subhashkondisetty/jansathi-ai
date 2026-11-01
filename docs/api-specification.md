@@ -77,7 +77,7 @@ The API enforces rate limits using standard IETF draft-7 headers:
 
 ### Rate Limit Windows & Policies
 
-- **Global**: 300 requests / 15 minutes (`RATE_LIMIT_GLOBAL_MAX`)
+- **Global**: 300 requests / 15 minutes (`RATE_LIMIT_GLOBAL_MAX`), health probes (`/api/health*`) are skipped
 - **Authentication**: 10 requests / 15 minutes (`RATE_LIMIT_AUTH_MAX`)
 - **AI Endpoints**: 20 requests / 1 minute (`RATE_LIMIT_AI_PER_MIN`), keyed by User ID or IP
 - **Upload Endpoints**: 10 requests / 1 hour (`RATE_LIMIT_UPLOAD_PER_HOUR`), keyed by User ID or IP

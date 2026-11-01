@@ -48,7 +48,7 @@ export const errorHandler = (err, req, res, next) => {
   else if (err.name === 'CastError') {
     status = 400;
     code = 'VALIDATION_ERROR';
-    message = `Invalid value for ${err.path}: ${err.value}`;
+    message = 'Invalid identifier or parameter format';
     details = [
       {
         field: err.path,
@@ -60,8 +60,8 @@ export const errorHandler = (err, req, res, next) => {
   else if (err.code === 11000) {
     status = 409;
     code = 'CONFLICT';
-    message = 'Resource conflict: duplicate entry exists';
-    details = err.keyValue ? { duplicateField: err.keyValue } : undefined;
+    message = 'A record with this value already exists';
+    details = undefined;
   }
   // 6. JWT errors
   else if (err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError') {

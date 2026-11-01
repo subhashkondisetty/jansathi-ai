@@ -36,6 +36,11 @@ export const resolveSafePath = (storedName) => {
     throw new ApiError(400, 'VALIDATION_ERROR', 'Invalid file identifier');
   }
 
+  if (storedName.includes('/') || storedName.includes('\\') || storedName.includes('..')) {
+    logger.warn({ storedName }, 'Path traversal attempt detected in resolveSafePath');
+    throw new ApiError(400, 'VALIDATION_ERROR', 'Invalid file path traversal');
+  }
+
   const safeBasename = path.basename(storedName);
   const resolvedPath = path.resolve(env.STORAGE_DIR, safeBasename);
 

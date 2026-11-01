@@ -27,8 +27,12 @@ import {
   updateSourceSchema,
   updateSourceStatusSchema,
   listSourcesQuerySchema,
+  sourceIdParamSchema,
 } from '../validators/sourceValidators.js';
-import { adminUpdateDocumentSchema } from '../validators/documentValidators.js';
+import {
+  adminUpdateDocumentSchema,
+  documentIdParamSchema,
+} from '../validators/documentValidators.js';
 import {
   listIngestionJobsQuerySchema,
   ingestionJobIdParamSchema,
@@ -44,18 +48,26 @@ router.get('/session', getSession);
 // Source Management Routes
 router.post('/sources', validate({ body: createSourceSchema }), createSource);
 router.get('/sources', validate({ query: listSourcesQuerySchema }), listSources);
-router.get('/sources/:id', getSourceById);
-router.put('/sources/:id', validate({ body: updateSourceSchema }), updateSource);
+router.get('/sources/:id', validate({ params: sourceIdParamSchema }), getSourceById);
+router.put(
+  '/sources/:id',
+  validate({ params: sourceIdParamSchema, body: updateSourceSchema }),
+  updateSource
+);
 router.patch(
   '/sources/:id/status',
-  validate({ body: updateSourceStatusSchema }),
+  validate({ params: sourceIdParamSchema, body: updateSourceStatusSchema }),
   updateSourceStatus
 );
-router.delete('/sources/:id', deleteSource);
-router.post('/sources/:id/ingest', triggerSourceIngest);
+router.delete('/sources/:id', validate({ params: sourceIdParamSchema }), deleteSource);
+router.post('/sources/:id/ingest', validate({ params: sourceIdParamSchema }), triggerSourceIngest);
 
 // Document Administrative Routes
-router.patch('/documents/:id', validate({ body: adminUpdateDocumentSchema }), adminUpdateDocument);
+router.patch(
+  '/documents/:id',
+  validate({ params: documentIdParamSchema, body: adminUpdateDocumentSchema }),
+  adminUpdateDocument
+);
 
 // Ingestion Jobs Administrative Routes
 router.get('/ingestion-jobs', validate({ query: listIngestionJobsQuerySchema }), listIngestionJobs);

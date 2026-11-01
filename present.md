@@ -3,7 +3,7 @@
 > **Event**: FORGE '26 — Theme 1: "Civic Pulse"  
 > **Project**: JanSathi AI (Government-Information Assistant for Indian Citizens)  
 > **Current Date**: November 1, 2026  
-> **Current Milestone**: Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6 & Phase 7 Complete, Verified & Live Against MongoDB Atlas
+> **Current Milestone**: Phase 13 (Deployment + Documentation + AI Integration Checklist) — READY FOR DEPLOYMENT CONFIGURATION
 
 ---
 
@@ -33,27 +33,27 @@ Milestones completed to date:
 - **Phase 4 (Authentication, Authorization & User Management)**: JWT HS256 pipeline, bcrypt password hashing, constant-time dummy comparisons, role-based access (`citizen`, `admin`), profile GET/PUT, audit logging, admin CLI (`d674275`).
 - **Phase 5 (Source Management, Secure PDF Upload & Catalog Core)**: Complete official source CRUD (SSRF mitigation, private IP blocking), Multer disk storage, `%PDF-` magic-byte verification, SHA-256 deduplication, background `IngestionJob` queuing, catalog listing with safe regex escaping, public facets aggregation, and granular page access permissions (`35e281e`).
 - **Phase 6 (Document Ingestion Pipeline & Background Processing)**: Background `IngestionRunner` daemon with atomic locking and concurrency bounding; `pdfjs-dist` text extraction; Cheerio HTML section parsing; `textCleaner` NFC normalization and de-hyphenation; `chunkingService` deterministic sentence chunking with overlap and denormalized metadata; bounded exponential backoff retries; admin source ingest trigger (`POST /api/admin/sources/:id/ingest`) and job management/retry endpoints (`/api/admin/ingestion-jobs`) (`b90c45a`).
-- **Phase 7 (Retrieval Service, Conversation History & AI Hook Shells)**: Text retrieval swap point (`retrievalService`) with MongoDB textScore search, snippet generation, and visibility shielding; `GET /api/search` with privacy guarantees; user-scoped conversation history (`conversationService`, `/api/history`) with 200-message ceiling and audit logging; AI hook shells (`aiService`, `ragService`, `embeddingService`, `eligibilityService`, `verificationService`) returning standardized `501 NOT_IMPLEMENTED` with zero phantom records; complete AI response contract defined.
+- **Phase 7 (Retrieval Service, Conversation History & AI Hook Shells)**: Text retrieval swap point (`retrievalService`) with MongoDB textScore search, snippet generation, and visibility shielding; `GET /api/search` with privacy guarantees; user-scoped conversation history (`conversationService`, `/api/history`) with 200-message ceiling and audit logging; AI hook shells (`aiService`, `ragService`, `embeddingService`, `eligibilityService`, `verificationService`) returning standardized `501 NOT_IMPLEMENTED` with zero phantom records; complete AI response contract defined (`f9c903a`). Followed by comprehensive Step 2 security hardening (JWT secret length >= 32, production MONGODB_URI guard, globalLimiter health probe bypass, CastError parameter masking, and 11000 duplicate key privacy).
 
 ---
 
 ## 3. 13-Phase Milestone Roadmap
 
-| Phase       | Milestone Name                     | Status                           | Key Highlights                                                                                                                       |
-| :---------- | :--------------------------------- | :------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------- |
-| **Phase 1** | **Monorepo Foundation**            | **DONE & COMMITTED** (`309a4cc`) | Workspaces (`client`, `server`), ESLint 9 flat config, Prettier, Vite, Tailwind CSS 3, Express scaffolding, `/api/health`            |
-| **Phase 2** | **Server Core & DB Integration**   | **DONE & COMMITTED** (`60b0899`) | MongoDB Atlas cluster connected, Pino logger + redaction, Helmet CSP, CORS allowlist, Rate limiters, Zod validators, Readiness probe |
-| **Phase 3** | **Mongoose Models & DB Indexes**   | **DONE & COMMITTED** (`6f7e073`) | 9 domain models, 17 system enums, text search index, TTL audit log index, `npm run db:sync-indexes` tooling                          |
-| **Phase 4** | **Auth, Roles & User Management**  | **DONE & COMMITTED** (`d674275`) | JWT HS256, bcryptjs, constant-time dummy hash, citizen registration/login, profile GET/PUT, admin CLI, audit logging                 |
-| **Phase 5** | **Source CRUD, Upload & Catalog**  | **DONE & COMMITTED** (`35e281e`) | Multer upload, magic bytes, SHA-256 dedupe, catalog listing, facets aggregation, source CRUD, SSRF prevention                        |
-| **Phase 6** | **Document Ingestion Pipeline**    | **DONE & COMMITTED** (`b90c45a`) | Background IngestionRunner, pdfjs extraction, HTML Cheerio parsing, NFC cleaner, chunking with overlap, bounded retries, job APIs    |
-| **Phase 7** | **Retrieval, History & AI Shells** | **DONE & VERIFIED**              | retrievalService text search swap point, GET /api/search, /api/history session management, AI hook shells (501), AI CONTRACT spec    |
-| Phase 8     | Citizen Portal UI                  | Pending                          | Scheme discovery, filtering, bookmarking, mobile-first design                                                                        |
-| Phase 9     | Admin Governance & Review          | Pending                          | Document review, audit logs, scheme approval workflows                                                                               |
-| Phase 10    | Notifications & Civic Alerts       | Pending                          | Circulars, acts, notifications feeds, urgency tags                                                                                   |
-| Phase 11    | Multilingual Meta Framework        | Pending                          | Language enums (`en`, `te`, `hi`, `ta`), UI localization scaffolding                                                                 |
-| Phase 12    | Eligibility Checklist Engine       | Pending                          | Deterministic non-AI rule evaluator for scheme eligibility                                                                           |
-| Phase 13    | Final Polish & Production Deploy   | Pending                          | Render/Atlas production build, Docker, demo script                                                                                   |
+| Phase        | Milestone Name                          | Status                                 | Key Highlights                                                                                                                                                                                         |
+| :----------- | :-------------------------------------- | :------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Phase 1**  | **Monorepo Foundation**                 | **DONE & COMMITTED** (`309a4cc`)       | Workspaces (`client`, `server`), ESLint 9 flat config, Prettier, Vite, Tailwind CSS 3, Express scaffolding, `/api/health`                                                                              |
+| **Phase 2**  | **Server Core & DB Integration**        | **DONE & COMMITTED** (`60b0899`)       | MongoDB Atlas cluster connected, Pino logger + redaction, Helmet CSP, CORS allowlist, Rate limiters, Zod validators, Readiness probe                                                                   |
+| **Phase 3**  | **Mongoose Models & DB Indexes**        | **DONE & COMMITTED** (`6f7e073`)       | 9 domain models, 17 system enums, text search index, TTL audit log index, `npm run db:sync-indexes` tooling                                                                                            |
+| **Phase 4**  | **Auth, Roles & User Management**       | **DONE & COMMITTED** (`d674275`)       | JWT HS256, bcryptjs, constant-time dummy hash, citizen registration/login, profile GET/PUT, admin CLI, audit logging                                                                                   |
+| **Phase 5**  | **Source CRUD, Upload & Catalog**       | **DONE & COMMITTED** (`35e281e`)       | Multer upload, magic bytes, SHA-256 dedupe, catalog listing, facets aggregation, source CRUD, SSRF prevention                                                                                          |
+| **Phase 6**  | **Document Ingestion Pipeline**         | **DONE & COMMITTED** (`b90c45a`)       | Background IngestionRunner, pdfjs extraction, HTML Cheerio parsing, NFC cleaner, chunking with overlap, bounded retries, job APIs                                                                      |
+| **Phase 7**  | **Retrieval, History & AI Shells**      | **DONE & COMMITTED** (`f9c903a`)       | retrievalService text search swap point, GET /api/search, /api/history session management, AI hook shells (501), AI CONTRACT spec                                                                      |
+| **Phase 8**  | **Frontend Foundation & Design**        | **DONE & VERIFIED**                    | React 18, React Router 6, Tailwind 3.4, accessible design system, AuthContext, OptionsContext, LanguageSelector, safe token storage, AdminRoute, honest civic placeholders                             |
+| **Phase 9**  | **Document Library & PDF Viewer**       | **DONE (Manual Verification Pending)** | Citizen document search, filtering, pagination, extracted text reader (/pages), SHA-256 verification, multipart PDF upload with deduplication                                                          |
+| **Phase 10** | **Conversational AI & Eligibility**     | **DONE (Manual Verification Pending)** | Multilingual AI-ready citizen pages (Assistant, Eligibility, Explainer, Verify) with HTTP 501 transparency and zero fake responses                                                                     |
+| **Phase 11** | **Admin Control & Analytics Dashboard** | **DONE & VERIFIED**                    | Production admin interface: Dashboard, Documents, Jobs, Sources, Users, Analytics, System Status; 100% database-backed metrics                                                                         |
+| **Phase 12** | **Tests & Security Hardening**          | **READY FOR USER MANUAL VERIFICATION** | 155 Vitest unit tests (14 suites), Zod ObjectId route parameter validation, path traversal defense, deep SSRF protection, CORS & rate limit hardening, zero secret leakage                             |
+| **Phase 13** | **Deployment + Docs + AI Checklist**    | **READY FOR DEPLOYMENT CONFIGURATION** | Production config hardening, Vercel SPA rewrites (vercel.json), Atlas/Render/Vercel deployment runbooks, 5 docs (API, ARCHITECTURE, SECURITY, DEPLOYMENT, AI_INTEGRATION_CHECKLIST), 156 tests passing |
 
 ---
 
@@ -282,10 +282,116 @@ jansathi-ai/
 
 ---
 
-## 8. Next Actions & Instructions
+## 8. Milestone Status & Verification
 
-Phase 6 has been implemented, tested, verified, and committed.
+Phase 11 (Admin Panel + Analytics) implementation and automated verification are complete. The administrative interface is fully operational and grounded strictly in verified backend APIs:
 
-To proceed to **Phase 7: Admin Governance & Review**, reply with:
+1. **Dedicated Administrative Shell**: Responsive sidebar (`AdminSidebar`), top navigation (`AdminHeader`) with citizen portal return switcher, mobile drawer support, and accessible layout (`AdminLayout`) guarded by verified `/api/admin/session` token and admin role check (`AdminRoute`).
+2. **Authentic Database-Backed Telemetry**:
+   - Total document counts query `GET /api/documents?scope=all` with `limit=1` pagination metadata (`meta.total`) without excessive downloading.
+   - Public-ready facets (`GET /api/documents/facets`) are clearly labeled and separated from overall corpus counts.
+   - Ingestion jobs query `GET /api/admin/ingestion-jobs` across all supported statuses (`queued`, `running`, `succeeded`, `failed`, `skipped_duplicate`).
+   - Official sources query `GET /api/admin/sources` with active/inactive counts.
+   - Honest user management disclosure on `AdminUsersPage` clearly explaining API unavailability with zero fake user records.
+   - Genuine system telemetry on `AdminSystemStatusPage` probing `/api/health`, `/api/health/ready`, and `/api/ai/status`.
+3. **Operational Capabilities**:
+   - Single-click manual retry for failed ingestion jobs (`POST /api/admin/ingestion-jobs/:id/retry`) with 409 conflict handling and real state refresh.
+   - Document metadata editorial updates (`PATCH /api/admin/documents/:id`) and deletion (`DELETE /api/documents/:id`) with non-optimistic confirmation dialogs.
+   - Official source creation and editing validated against backend Zod schema (`sourceUrlSchema`) with active status toggling and manual crawl triggers (`POST /api/admin/sources/:id/ingest`).
+4. **Multilingual Localization**: Complete native translations across English (`en`), Telugu (`te`), Hindi (`hi`), and Tamil (`ta`).
+5. **Strict Scope Discipline**: Zero backend source files were modified in Phase 11. All 74 Vitest tests pass, ESLint reports 0 errors and 0 warnings, Prettier passes, and the Vite production build succeeds cleanly.
 
-> **`Phase 6 confirmed`**
+---
+
+## 9. Phase 12 Architecture: Tests + Security Hardening
+
+> **Milestone Status**: `READY FOR USER MANUAL VERIFICATION`  
+> **Automated Test Results**: 155/155 passed across 14 Vitest suites (0 failing)  
+> **Regression Verification**: `eslint .` (0 errors, 0 warnings), `prettier --check .` (100% compliant), `vite build` (6.21s clean build)  
+> **Manual Verification Note**: Phase 9 and Phase 10 manual verification remain pending as designated. Phase 11 is verified. Phase 12 is ready for user manual verification.
+
+### A. Security Audit & Concrete Remediation
+
+1. **Route Parameter Validation for MongoDB ObjectIds (`SEC-01`)**:
+   - Gaps identified: `GET /api/documents/:id`, `GET /api/documents/:id/pages`, `DELETE /api/documents/:id`, `GET/PUT/PATCH/DELETE /api/admin/sources/:id`, and `PATCH /api/admin/documents/:id` lacked Zod parameter schemas, allowing malformed IDs to hit Mongoose directly and cause `CastError`.
+   - Fix implemented: Added `documentIdParamSchema` in `documentValidators.js` and `sourceIdParamSchema` in `sourceValidators.js` using `common.objectId`. Applied `validate({ params: ... })` across all routes. All parameterized endpoints now reject malformed ObjectIds with HTTP 400 `VALIDATION_ERROR` before controller logic runs.
+2. **Deep SSRF Defense Expansion (`SEC-02`)**:
+   - Expanded `isDisallowedHostname` in `sourceValidators.js` to unconditionally reject:
+     - Localhost and loopback: `localhost`, `127.0.0.1`, `0.0.0.0`, `::1`, `::`.
+     - Cloud metadata: `169.254.169.254`, `metadata.google.internal`, `instance-data`.
+     - IPv6 link-local and unique-local: `fe80:`, `fc00:`, `fd` (with colons).
+     - IPv4-mapped IPv6: `::ffff:`.
+     - IPv4 private, loopback, link-local, carrier-grade NAT (`100.64.0.0/10`), and multicast/reserved (`>= 224`).
+   - Network layer defense (`fetchService.js`): Socket-level DNS lookup (`createSafeLookup`) inspects every resolved IP against `isDisallowedIp` before opening TCP connections. Hostname pinning blocks cross-domain redirects, max redirects is capped at 3, and byte size is capped at 25MB.
+3. **Path Traversal Protection (`SEC-03`)**:
+   - Hardened `resolveSafePath` in `fileStorageService.js` to immediately detect and reject directory separators (`/`, `\\`) and traversal sequences (`..`) in stored file names with HTTP 400 `VALIDATION_ERROR`.
+4. **Secret Hygiene & Error Data Masking (`SEC-04`)**:
+   - Verified that production error handler suppresses raw stack traces, masks internal 500 error messages to `'Internal server error'`, masks CastError input values, and suppresses MongoDB 11000 duplicate keys without leaking user email.
+   - Verified that Vite production client bundle contains zero leaked database connection URIs, JWT secrets, or environment credentials.
+
+### B. Comprehensive Vitest Test Suite (155 Tests across 14 Suites)
+
+| Suite File                         | Tests | Focus Area & Verified Contracts                                                                                                                                                                                                     |
+| :--------------------------------- | :---- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `authHardening.test.js`            | 23    | Password/email schemas, registration strictness (rejects mass-assignment `role`), JWT expiry (`TOKEN_EXPIRED`), invalid signatures, missing tokens, inactive user accounts, and `requireRole` authorization gating                  |
+| `documentSecurity.test.js`         | 21    | `documentIdParamSchema` validation, `%PDF-` magic-byte verification (415 on non-PDF with temp file deletion), path traversal prevention (`resolveSafePath`, `sanitizeOriginalFilename`), metadata constraints, and ownership gating |
+| `adminOperationsHardening.test.js` | 18    | `sourceIdParamSchema` validation, `retryIngestionJob` status gating (409 on non-failed jobs), inactive source ingest block (400), and deep SSRF defenses (cloud metadata, private IPs, IPv4-mapped IPv6)                            |
+| `healthAndAiContracts.test.js`     | 11    | `/api/health` 200 liveness, `/api/health/ready` 200/503 readiness, `isHealthCheckRequest` rate limiting skip logic without false positives, and AI 501 `NOT_IMPLEMENTED` contracts                                                  |
+| `errorSanitization.test.js`        | 8     | CastError input masking, 11000 duplicate key privacy, production 500 message masking, 501 contract preservation, and CORS policy enforcement                                                                                        |
+| `apiContractCorrections.test.js`   | 12    | `sendPaginated` empty bounds, validation error details `{ field, message }`, envSchema validation, upload errors                                                                                                                    |
+| `chunkingService.test.js`          | 11    | Sentence splitting, overlap context, metadata propagation                                                                                                                                                                           |
+| `textCleaner.test.js`              | 14    | NFC normalization, control character stripping, de-hyphenation                                                                                                                                                                      |
+| `scriptDetect.test.js`             | 25    | Indic (te, hi, ta) and English script detection                                                                                                                                                                                     |
+| `aiShells.test.js`                 | 5     | Service-level 501 `NotImplementedError` throwing                                                                                                                                                                                    |
+| `aiValidators.test.js`             | 3     | AI request schema validations                                                                                                                                                                                                       |
+| `historyValidators.test.js`        | 2     | Conversation history schemas                                                                                                                                                                                                        |
+| `retrievalSnippet.test.js`         | 1     | Retrieval search snippet extraction                                                                                                                                                                                                 |
+| `searchValidators.test.js`         | 1     | Search query validation                                                                                                                                                                                                             |
+
+---
+
+## 10. Phase 13 Architecture: Deployment, Documentation & AI Integration Handover
+
+### A. Executive Milestone Summary
+
+Phase 13 completes the final non-AI foundation milestone of JanSathi AI. It prepares the monorepo for production deployment across Render, Vercel, and MongoDB Atlas, fortifies production configuration validation, establishes complete and verified technical documentation, and provides an actionable engineering handover checklist for future AI enablement while strictly maintaining non-AI governance.
+
+### B. Production Configuration & Deployment Hardening
+
+1. **JWT Secret Guard in Production**: Enhanced `server/src/config/env.js` `superRefine` validation to strictly reject known development secrets (`jansathi-development-secret-jwt-key-2026`, `dev-secret-change-me`) when `NODE_ENV === 'production'`.
+2. **Standardized Environment Templates**: Created safe `.env.example` templates at root, `client/.env.example`, and `server/.env.example` with zero exposed credentials, instructions on generating cryptographically secure 32+ character hex secrets, and secure MongoDB Atlas configuration instructions.
+3. **MongoDB Atlas Network Security**: Documented policy restricting network access to known application egress IPs or private networking (AWS VPC Peering / PrivateLink). Clarified dynamic egress IP limitations on shared PaaS tiers and explicitly noted that strong passwords never make unrestricted network access safe.
+4. **Render npm Workspace Configuration**: Verified that Render must be deployed from the repository root (Root Directory: `.`) with `npm ci --workspace=server --include-workspace-root` and start command `npm run start` to preserve the authoritative root `package-lock.json`.
+5. **Health Check Architecture**: Documented liveness (`/api/health`) versus readiness (`/api/health/ready`), recommending `/api/health/ready` for Render's zero-downtime deployment health check to ensure traffic is only routed after MongoDB connection is confirmed.
+6. **Safer Admin Provisioning**: Documented password injection procedure using `read -s` to prevent secret leakage in `.bash_history` and process listings.
+7. **Vercel SPA Routing Configuration**: Created `client/vercel.json` with clean URL rewrites routing all SPA paths (`/`, `/documents`, `/assistant`, `/eligibility`, `/explainer`, `/verify`, `/admin/*`) to `/index.html` while preserving direct access to `/assets/*` and file extensions.
+
+### C. Complete Technical Documentation Suite
+
+1. **[`README.md`](file:///c:/Users/SUBHASH/OneDrive/Desktop/Janshanti/README.md)**: Comprehensive project overview, problem statement, features, architecture, monorepo directory tree, local setup, development commands, test execution, API overview, and deployment summary.
+2. **[`docs/ARCHITECTURE.md`](file:///c:/Users/SUBHASH/OneDrive/Desktop/Janshanti/docs/ARCHITECTURE.md)**: Verified system architecture, client contexts and route guards, backend middleware pipeline, 9 Mongoose data schemas, entity-relationship diagrams, IngestionRunner state machine, and error handling architecture.
+3. **[`docs/API.md`](file:///c:/Users/SUBHASH/OneDrive/Desktop/Janshanti/docs/API.md)**: Authoritative API reference documenting every implemented route, authentication/authorization requirements, request schemas, response envelopes, standard error codes, and HTTP 501 AI contract shells.
+4. **[`docs/SECURITY.md`](file:///c:/Users/SUBHASH/OneDrive/Desktop/Janshanti/docs/SECURITY.md)**: Threat model and security reference covering bcrypt hashing (12 rounds), constant-time dummy comparisons, HS256 JWT lifecycle, RBAC, Zod validation, PDF magic bytes (`%PDF-`), temporary storage cleanup, path traversal prevention, deep SSRF defense, CORS allowlist, Helmet CSP, and Pino redaction.
+5. **[`docs/DEPLOYMENT.md`](file:///c:/Users/SUBHASH/OneDrive/Desktop/Janshanti/docs/DEPLOYMENT.md)**: Step-by-step production runbooks for MongoDB Atlas, Render backend web service, and Vercel frontend, including health checks, post-deployment smoke tests, and rollback procedures.
+6. **[`docs/AI_INTEGRATION_CHECKLIST.md`](file:///c:/Users/SUBHASH/OneDrive/Desktop/Janshanti/docs/AI_INTEGRATION_CHECKLIST.md)**: Practical engineering handover guide for future AI enablement covering hybrid retrieval, dense embeddings, grounded RAG, deterministic criteria tables, stance classification, prompt injection defenses, PII filtering, circuit breakers, and "AI-Day" feature flag activation.
+
+### D. Automated Quality Gates Status
+
+- **Backend Vitest Unit Tests**: 156 passed across 14 test suites in `server` workspace (100% pass rate in < 2.0s).
+- **Frontend Verification**: Clean Vite production build in 5.17s; 0 ESLint errors/warnings; 100% Prettier compliance across all client source files. (Zero automated frontend unit test runner configured; client UI tested via browser).
+- **ESLint**: 0 errors, 0 warnings across all workspaces.
+- **Prettier**: 100% code style compliance.
+- **Secret Hygiene**: Zero database URIs, JWT secrets, or cloud credentials in build output or logs.
+- **AI Endpoints**: All AI endpoints (`/api/ai/ask`, `/api/ai/eligibility`, `/api/verify/claim`) strictly return HTTP 501 `NOT_IMPLEMENTED`.
+
+### E. Manual Verification Tracking Across All Phases
+
+| Phase     | Title                                      | Status           | Manual Verification State                                                            |
+| :-------- | :----------------------------------------- | :--------------- | :----------------------------------------------------------------------------------- |
+| Phase 1–7 | Server Core, Schemas, Ingestion, AI Shells | Done & Committed | Automated verification complete; committed in early milestones.                      |
+| Phase 8   | Frontend Foundation & Design System        | Done & Verified  | Automated verification complete; verified.                                           |
+| Phase 9   | Document Library & Extracted Text Reader   | Done             | Automated verification complete; **User Manual Verification Pending**.               |
+| Phase 10  | AI-Ready Citizen Pages (501 UI)            | Done             | Automated verification complete; **User Manual Verification Pending**.               |
+| Phase 11  | Admin Panel & Analytics Dashboard          | Done & Verified  | Automated & manual verification verified.                                            |
+| Phase 12  | Tests & Security Hardening                 | Done             | Automated verification complete (155 tests); **Ready for User Manual Verification**. |
+| Phase 13  | Deployment + Docs + AI Checklist           | Done             | Automated verification complete (156 tests); **Ready for Deployment Configuration**. |

@@ -26,12 +26,24 @@ const userOrIpKeyGenerator = (req) => {
   return ipKeyGenerator(req);
 };
 
-// Global rate limiter (15 minutes window)
+export const isHealthCheckRequest = (req) => {
+  const raw = req.originalUrl || req.url || req.path || '';
+  const pathname = raw.split('?')[0].replace(/\/+$/, '');
+  return (
+    pathname === '/api/health' ||
+    pathname.startsWith('/api/health/') ||
+    pathname === '/health' ||
+    pathname.startsWith('/health/')
+  );
+};
+
+// Global rate limiter (15 minutes window, health probes skipped)
 export const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: env.RATE_LIMIT_GLOBAL_MAX,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
+  skip: isHealthCheckRequest,
   handler: createRateLimitHandler(15 * 60 * 1000),
 });
 

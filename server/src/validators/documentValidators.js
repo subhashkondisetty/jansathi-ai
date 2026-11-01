@@ -10,6 +10,11 @@ import {
   LANGUAGES,
   DOC_STATUS,
 } from '../config/constants.js';
+import { objectId } from './common.js';
+
+export const documentIdParamSchema = z.object({
+  id: objectId,
+});
 
 const SORT_WHITELIST = [
   'createdAt',

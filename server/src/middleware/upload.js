@@ -84,7 +84,7 @@ export const uploadPdf = (req, res, next) => {
           400,
           'VALIDATION_ERROR',
           'File is required. Send a single PDF in the "file" field.',
-          [{ target: 'body', path: 'file', message: 'No file uploaded' }]
+          [{ field: 'file', message: 'No file uploaded' }]
         )
       );
     }
