@@ -41,7 +41,7 @@ Milestones completed to date:
 | **Phase 2** | **Server Core & DB Integration**  | **DONE & COMMITTED** (`60b0899`)      | MongoDB Atlas cluster connected, Pino logger + redaction, Helmet CSP, CORS allowlist, Rate limiters, Zod validators, Readiness probe |
 | **Phase 3** | **Mongoose Models & DB Indexes**  | **DONE & COMMITTED** (`6f7e073`)      | 9 domain models, 17 system enums, text search index, TTL audit log index, `npm run db:sync-indexes` tooling                          |
 | **Phase 4** | **Auth, Roles & User Management** | **DONE & COMMITTED** (`d674275`)      | JWT HS256, bcryptjs, constant-time dummy hash, citizen registration/login, profile GET/PUT, admin CLI, audit logging                 |
-| **Phase 5** | **Source CRUD, Upload & Catalog** | **DONE & VERIFIED** (Ready to Commit) | Multer upload, magic bytes, SHA-256 dedupe, catalog listing, facets aggregation, source CRUD, SSRF prevention                        |
+| **Phase 5** | **Source CRUD, Upload & Catalog** | **DONE & COMMITTED** (`35e281e`)      | Multer upload, magic bytes, SHA-256 dedupe, catalog listing, facets aggregation, source CRUD, SSRF prevention                        |
 | Phase 6     | Document Ingestion Pipeline       | Pending                               | PDF/HTML text extraction, section chunking, ingestion queue worker                                                                   |
 | Phase 7     | Admin Governance & Review         | Pending                               | Document review, audit logs, scheme approval workflows                                                                               |
 | Phase 8     | Citizen Portal UI                 | Pending                               | Scheme discovery, filtering, bookmarking, mobile-first design                                                                        |
@@ -256,11 +256,11 @@ jansathi-ai/
 
 ## 8. Next Actions & Instructions
 
-Phase 5 is complete and ready to be committed to the repository:
+Phase 5 has been verified and committed to master (`35e281e`):
 
 ```bash
-git add .
-git commit -m "feat(phase-5): source crud, secure pdf upload, deduplication, and document catalog"
+git log -1 --oneline
+# 35e281e feat(phase-5): source crud, secure pdf upload, deduplication, and document catalog
 ```
 
 To proceed to **Phase 6: Document Ingestion Pipeline & Background Processing**, simply reply with:
