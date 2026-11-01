@@ -3,9 +3,11 @@
  */
 
 import * as sourceService from '../services/sourceService.js';
+import { createJobForSource } from '../services/ingestionQueueService.js';
 import { logAudit } from '../services/auditService.js';
 import { sendSuccess, sendPaginated } from '../utils/response.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
+import { ApiError } from '../utils/ApiError.js';
 
 export const createSource = asyncHandler(async (req, res) => {
   const source = await sourceService.createSource(req.body, req.user.id);
@@ -89,4 +91,26 @@ export const deleteSource = asyncHandler(async (req, res) => {
   });
 
   return sendSuccess(res, result, undefined, 200);
+});
+
+export const triggerSourceIngest = asyncHandler(async (req, res) => {
+  const source = await sourceService.getSourceById(req.params.id);
+  if (!source.isActive) {
+    throw new ApiError(400, 'VALIDATION_ERROR', 'Cannot trigger ingestion for an inactive source');
+  }
+
+  const job = await createJobForSource(source, req.user.id);
+
+  await logAudit({
+    actorId: req.user.id,
+    actorRole: req.user.role,
+    action: 'ingestion.trigger',
+    resourceType: 'Source',
+    resourceId: source.id,
+    outcome: 'success',
+    requestId: req.id,
+    metadata: { jobId: job.id },
+  });
+
+  return sendSuccess(res, { job }, undefined, 202);
 });

@@ -3,7 +3,7 @@
 > **Event**: FORGE '26 — Theme 1: "Civic Pulse"  
 > **Project**: JanSathi AI (Government-Information Assistant for Indian Citizens)  
 > **Current Date**: November 1, 2026  
-> **Current Milestone**: Phase 1, Phase 2, Phase 3, Phase 4 & Phase 5 Complete, Verified & Live Against MongoDB Atlas
+> **Current Milestone**: Phase 1, Phase 2, Phase 3, Phase 4, Phase 5 & Phase 6 Complete, Verified & Live Against MongoDB Atlas
 
 ---
 
@@ -29,7 +29,8 @@ Milestones completed to date:
 - **Phase 2 (Server Core & Database Connection)**: MongoDB Atlas cluster connected, Pino logger + redaction, Helmet CSP, CORS allowlist, rate limiters, Zod validators (`60b0899`).
 - **Phase 3 (Mongoose Models & Database Indexes)**: 9 domain schemas, 17 system enums, text search index, TTL audit log index, `syncIndexes.js` tooling (`6f7e073`).
 - **Phase 4 (Authentication, Authorization & User Management)**: JWT HS256 pipeline, bcrypt password hashing, constant-time dummy comparisons, role-based access (`citizen`, `admin`), profile GET/PUT, audit logging, admin CLI (`d674275`).
-- **Phase 5 (Source Management, Secure PDF Upload & Catalog Core)**: Complete official source CRUD (SSRF mitigation, private IP blocking), Multer disk storage, `%PDF-` magic-byte verification, SHA-256 deduplication, background `IngestionJob` queuing, catalog listing with safe regex escaping, public facets aggregation, and granular page access permissions.
+- **Phase 5 (Source Management, Secure PDF Upload & Catalog Core)**: Complete official source CRUD (SSRF mitigation, private IP blocking), Multer disk storage, `%PDF-` magic-byte verification, SHA-256 deduplication, background `IngestionJob` queuing, catalog listing with safe regex escaping, public facets aggregation, and granular page access permissions (`35e281e`).
+- **Phase 6 (Document Ingestion Pipeline & Background Processing)**: Background `IngestionRunner` daemon with atomic locking and concurrency bounding; `pdfjs-dist` text extraction; Cheerio HTML section parsing; `textCleaner` NFC normalization and de-hyphenation; `chunkingService` deterministic sentence chunking with overlap and denormalized metadata; bounded exponential backoff retries; admin source ingest trigger (`POST /api/admin/sources/:id/ingest`) and job management/retry endpoints (`/api/admin/ingestion-jobs`).
 
 ---
 
@@ -42,7 +43,7 @@ Milestones completed to date:
 | **Phase 3** | **Mongoose Models & DB Indexes**  | **DONE & COMMITTED** (`6f7e073`) | 9 domain models, 17 system enums, text search index, TTL audit log index, `npm run db:sync-indexes` tooling                          |
 | **Phase 4** | **Auth, Roles & User Management** | **DONE & COMMITTED** (`d674275`) | JWT HS256, bcryptjs, constant-time dummy hash, citizen registration/login, profile GET/PUT, admin CLI, audit logging                 |
 | **Phase 5** | **Source CRUD, Upload & Catalog** | **DONE & COMMITTED** (`35e281e`) | Multer upload, magic bytes, SHA-256 dedupe, catalog listing, facets aggregation, source CRUD, SSRF prevention                        |
-| Phase 6     | Document Ingestion Pipeline       | Pending                          | PDF/HTML text extraction, section chunking, ingestion queue worker                                                                   |
+| **Phase 6** | **Document Ingestion Pipeline**   | **DONE & VERIFIED**              | Background IngestionRunner, pdfjs extraction, HTML Cheerio parsing, NFC cleaner, chunking with overlap, bounded retries, job APIs    |
 | Phase 7     | Admin Governance & Review         | Pending                          | Document review, audit logs, scheme approval workflows                                                                               |
 | Phase 8     | Citizen Portal UI                 | Pending                          | Scheme discovery, filtering, bookmarking, mobile-first design                                                                        |
 | Phase 9     | AI Hook Architecture (Stubs)      | Pending                          | 501 NOT_IMPLEMENTED contracts for RAG, embeddings, and chat                                                                          |
@@ -53,38 +54,51 @@ Milestones completed to date:
 
 ---
 
-## 4. Phase 5 Architecture: Source Management & Document Storage
+## 4. Phase 6 Architecture: Non-AI Ingestion Pipeline
 
-### A. Source Management (`services/sourceService.js`)
+### A. Background Ingestion Runner (`jobs/ingestionRunner.js`)
 
-- Full administrative CRUD for official government portals (`POST`, `GET`, `PUT`, `DELETE /api/admin/sources`).
-- SSRF prevention: Rejects URLs with embedded credentials (`user:pass@`), `localhost`, and IP literals in private/loopback/link-local ranges (`127.0.0.0/8`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `169.254.0.0/16`).
-- Referential integrity: Prevents deletion or URL modification of sources that have associated documents (`409 CONFLICT`).
+- Runs as an in-process background worker daemon without external queue dependencies (no Redis).
+- Atomically claims queued jobs via `findOneAndUpdate` on `{ status: 'queued', nextRunAt: { $lte: new Date() } }` with `status: 'running'`, `lockedAt`, and attempt increments.
+- Enforces concurrency bounds (`INGESTION_CONCURRENCY=1` default).
+- On server startup, automatically scans for and recovers stale jobs stuck in `running` beyond `INGESTION_STALE_MINUTES=10`.
+- Supports immediate proactive runner kicks (`ingestionRunner.kick()`) upon job enqueueing.
+- Graceful shutdown handles in-flight jobs up to a 10-second timeout.
 
-### B. Secure PDF Ingestion Pipeline (`services/documentService.js`, `middleware/upload.js`)
+### B. Extraction & Ingestion Engine (`services/ingestionService.js`)
 
-1. **Multipart Handling**: Multer streams file to `STORAGE_DIR/tmp` under temporary random names.
-2. **Magic-Byte Inspection**: Reads first 1024 bytes to verify `%PDF-` header. Deletes file and returns `415 UNSUPPORTED_MEDIA_TYPE` if corrupted or spoofed (e.g. `.txt` renamed to `.pdf`).
-3. **Cryptographic Checksumming**: Streams file into SHA-256 digest via `crypto.createHash('sha256')`.
-4. **Deduplication Engine**:
-   - `scopeKey`: `'public'` for public documents, `'user:<id>'` for private citizen uploads.
-   - If duplicate found in `pending`/`processing`/`ready`: deletes temp file, returns `200 OK` with existing document.
-   - If citizen uploads identical public document: returns `200 OK` with `{ duplicate: true, reason: 'already_in_library' }`.
-   - If existing document is `failed`/`needs_ocr`: reuses document record, moves new file, resets status to `pending`, and queues fresh `IngestionJob` (`202 Accepted`).
-5. **Path Traversal Protection**: Final stored names are strictly `crypto.randomUUID() + '.pdf'`. Paths are resolved and verified against `STORAGE_DIR`. Original client filename is sanitized (control chars and path separators stripped) and used only for display.
-6. **Ingestion Job Queuing**: Creates `IngestionJob` with `type: 'upload'`, `status: 'queued'`, `stage: 'queued'`.
+- Idempotent execution: purges existing `DocumentPage` and `DocumentChunk` records for the target document at the beginning of each attempt.
+- PDF extraction (`services/pdfService.js`): Uses `pdfjs-dist` legacy build in Node with standard font mapping and worker isolation. Extracts line breaks based on vertical coordinate shifts and enforces `MAX_PDF_PAGES=300`.
+- HTML extraction (`services/htmlService.js`): Parses pages via Cheerio, removes navigation/footer boilerplate, and partitions content into pages based on `h1`-`h3` section headers.
+- Text cleaning (`services/textCleaner.js`): Preserves Indic scripts (Telugu, Devanagari, Tamil) via Unicode NFC normalization, strips unprintable control characters, de-hyphenates line-break Latin words, strips standalone page number lines, and conservatively eliminates headers/footers repeated on > 50% of pages in documents with at least 4 pages.
+- Language identification (`utils/scriptDetect.js`): Determines language (`te`, `hi`, `ta`, `en`, or `unknown`) using Unicode block ratios.
+- OCR evaluation: When > 80% of pages are empty, flags document as `needs_ocr` and job as `failed` with code `OCR_REQUIRED` when `ENABLE_OCR=false`.
+- Storage optimization: Permanently unlinks stored temporary PDFs upon successful ingestion unless `KEEP_UPLOADED_FILES=true`.
 
-### C. Catalog Queries & Access Control
+### C. Chunking & Metadata Enrichment (`services/chunkingService.js`)
 
-- **Scoping**:
-  - `scope=library`: Public ready documents.
-  - `scope=mine`: User's own uploads (all statuses).
-  - `scope=all`: Admin only (rejection `403 FORBIDDEN` for citizens).
-- **Regex Safety**: All substring search inputs (`q`) are escaped using `escapeRegex` to prevent ReDoS.
-- **Privacy Enforcement**:
-  - Citizens requesting another user's private document receive `404 NOT_FOUND` (preventing document ID enumeration).
-  - Admins querying private documents receive sanitized metadata only (`storage` filename and extraction text omitted).
-  - Admins querying `/documents/:id/pages` for private citizen documents receive `403 FORBIDDEN` (admins cannot inspect private citizen pages).
+- Splits text across paragraph and sentence boundaries (including `.`, `!`, `?`, and Devanagari danda `।`).
+- Packs sentences into target chunks (`CHUNK_TARGET_CHARS=1000`, `CHUNK_MAX_CHARS=1500`) with context overlap (`CHUNK_OVERLAP_CHARS=150`).
+- Merges fragments (< 100 characters) into adjacent chunks.
+- Denormalizes document metadata (title, authority, category, language, checksum, version) onto every chunk record for fast search retrieval without joins.
+
+### D. Safe Source Fetching (`services/fetchService.js`)
+
+- Connects only to active official sources.
+- Custom DNS lookup enforces SSRF mitigation across IPv4, IPv6, loopback, link-local, and cloud metadata (`169.254.169.254`) ranges at the socket connection level.
+- Restricts redirects to at most 3 hops within the pinned source hostname.
+- Size ceiling caps streams at `MAX_FETCH_MB=25`.
+- Captures `Last-Modified` HTTP headers and updates source fetch tracking.
+
+### E. Bounded Retries & Administrative Controls
+
+- Error classification separates transient retriable errors (network timeouts, 429, 5xx) from non-retriable failures (SSRF, corrupt PDF, encrypted PDF, OCR required).
+- Retriable errors trigger exponential backoff ($5000 \times 2^{\text{attempt}-1} + \text{jitter}$) up to `INGESTION_MAX_ATTEMPTS=3`.
+- Administrative APIs:
+  - `POST /api/admin/sources/:id/ingest`: Trigger immediate background ingestion.
+  - `GET /api/admin/ingestion-jobs`: Paginated listing with filtering and populated references.
+  - `GET /api/admin/ingestion-jobs/:id`: Detailed job inspect endpoint.
+  - `POST /api/admin/ingestion-jobs/:id/retry`: Manual retry for failed jobs (409 on non-failed).
 
 ---
 
@@ -98,28 +112,21 @@ Both development servers are active and connected in daemon mode:
 
 ### Comprehensive Verification Matrix
 
-| Test Suite / Target          | Verification Performed                                 | Expected Result                        | Actual Result                                  | Status   |
-| :--------------------------- | :----------------------------------------------------- | :------------------------------------- | :--------------------------------------------- | :------- |
-| **Source Creation**          | `POST /api/admin/sources`                              | 201 Created with valid URL             | Returns `201 Created` with source document     | **PASS** |
-| **Duplicate Source URL**     | `POST /api/admin/sources` duplicate URL                | 409 CONFLICT                           | Returns 409 `CONFLICT`                         | **PASS** |
-| **SSRF Localhost Block**     | `POST /api/admin/sources` with `http://localhost:8080` | 400 VALIDATION_ERROR                   | Rejected before database query                 | **PASS** |
-| **Source Status Toggle**     | `PATCH /api/admin/sources/:id/status`                  | 200 OK with `isActive: false`          | Updated and verified                           | **PASS** |
-| **Upload Wrong Field**       | `POST /api/documents/upload` with field `document`     | 400 VALIDATION_ERROR                   | Returns 400 with field message                 | **PASS** |
-| **Magic Byte Failure**       | Upload `.txt` file renamed to `.pdf`                   | 415 UNSUPPORTED_MEDIA_TYPE             | File deleted from temp, returned 415           | **PASS** |
-| **Public Doc Validation**    | Admin uploads public doc without issuingAuthority      | 400 VALIDATION_ERROR                   | Rejected with required field list              | **PASS** |
-| **Citizen PDF Upload**       | Citizen uploads valid PDF                              | 202 Accepted, pending doc + queued job | Document and IngestionJob created              | **PASS** |
-| **Checksum Deduplication**   | Upload same PDF file again                             | 200 OK `{ duplicate: true, document }` | Returns original document                      | **PASS** |
-| **Admin Public Upload**      | Admin uploads complete public document                 | 202 Accepted with public visibility    | Document and IngestionJob created              | **PASS** |
-| **Regex Query Safety**       | `GET /api/documents?q=(.*`                             | 200 OK without regex errors            | Safely escaped, returns results                | **PASS** |
-| **Private Doc Isolation**    | Citizen 2 requests Citizen 1's private doc             | 404 NOT_FOUND                          | Returns 404 (prevents enumeration)             | **PASS** |
-| **Admin Private Inspection** | Admin requests Citizen 1's private doc                 | 200 OK metadata only                   | Metadata returned, file details scrubbed       | **PASS** |
-| **Private Pages Protection** | Admin requests Citizen 1's private doc pages           | 403 FORBIDDEN                          | Access denied (admin cannot read private text) | **PASS** |
-| **Owner Pages Retrieval**    | Citizen 1 requests own document pages                  | 200 OK with page list                  | Returns page array with pagination meta        | **PASS** |
-| **Document Deletion**        | Owner deletes own document                             | 200 OK, stored file unlinked           | File removed from disk, pages/chunks purged    | **PASS** |
-| **Metadata Options Limits**  | `GET /api/meta/options`                                | 200 OK with `limits` object            | Returns `maxUploadMb: 10`, `maxPdfPages: 300`  | **PASS** |
-| **Source Deletion**          | `DELETE /api/admin/sources/:id`                        | 200 OK `{ deleted: true }`             | Source deleted cleanly                         | **PASS** |
-| **Code Style & Format**      | `npm run format:check`                                 | Prettier compliance across all files   | All files match Prettier code style            | **PASS** |
-| **Static Code Analysis**     | `npm run lint`                                         | ESLint 9 zero errors/warnings          | 0 errors, 0 warnings                           | **PASS** |
+| Test Suite / Target          | Verification Performed                        | Expected Result                                     | Actual Result                             | Status   |
+| :--------------------------- | :-------------------------------------------- | :-------------------------------------------------- | :---------------------------------------- | :------- |
+| **Unit Tests: ScriptDetect** | Vitest suite (`scriptDetect.test.js`)         | Accurate language classification (te, hi, ta)       | 25/25 tests passing                       | **PASS** |
+| **Unit Tests: TextCleaner**  | Vitest suite (`textCleaner.test.js`)          | NFC normalisation, de-hyphenation, header trim      | All cleaning assertions passing           | **PASS** |
+| **Unit Tests: Chunking**     | Vitest suite (`chunkingService.test.js`)      | Sentence split, overlap context, metadata copy      | Deterministic chunk bounds verified       | **PASS** |
+| **Upload Pipeline**          | Upload text PDF via citizen account           | Queued &rarr; Running &rarr; Succeeded &rarr; Ready | Document ready, pageCount=1, chunkCount=1 | **PASS** |
+| **Page Retrieval**           | `GET /api/documents/:id/pages`                | 200 OK with extracted page array                    | Extracted text verified                   | **PASS** |
+| **Scanned PDF Evaluation**   | Upload empty/scanned PDF (`ENABLE_OCR=false`) | Fails with `OCR_REQUIRED`, doc `needs_ocr`          | Document status updated to `needs_ocr`    | **PASS** |
+| **Admin Jobs Listing**       | `GET /api/admin/ingestion-jobs?status=failed` | 200 OK with paginated failed jobs                   | Found and populated jobs                  | **PASS** |
+| **Manual Job Retry**         | `POST /api/admin/ingestion-jobs/:id/retry`    | 200 OK, job requeued, document pending              | State reset, attempts set to 0            | **PASS** |
+| **Invalid Retry Attempt**    | Retry succeeded job                           | 409 CONFLICT                                        | Rejected with 409 CONFLICT                | **PASS** |
+| **SSRF Source Block**        | Create source with `169.254.169.254`          | 400 VALIDATION_ERROR                                | Rejected before creation                  | **PASS** |
+| **Unreachable Source Retry** | Trigger ingest for `https://example.invalid`  | Bounded retry scheduled with exponential delay      | Recorded attempt=1, nextRunAt scheduled   | **PASS** |
+| **Code Style & Format**      | `npm run format:check`                        | Prettier compliance across all files                | All files match Prettier code style       | **PASS** |
+| **Static Code Analysis**     | `npm run lint`                                | ESLint 9 zero errors/warnings                       | 0 errors, 0 warnings                      | **PASS** |
 
 ---
 
@@ -140,7 +147,7 @@ jansathi-ai/
 ├── README.md                              # Project overview, prerequisites, and setup instructions
 ├── docs/
 │   ├── api-specification.md               # API protocol, error envelope, and endpoint specifications
-│   └── architecture.md                    # System architecture and domain intent overview
+│   └── architecture.md                    # System architecture, pipeline diagrams, and retry specifications
 ├── client/
 │   ├── index.html                         # Mobile-first HTML viewport
 │   ├── package.json                       # Client dependencies (React 18, Vite, Tailwind, Axios)
@@ -159,29 +166,37 @@ jansathi-ai/
 │       │   └── api.js                     # Configured Axios client instance
 │       └── utils/.gitkeep                 # Client utility placeholders
 └── server/
-    ├── package.json                       # Server dependencies & scripts (Express, Mongoose, Zod, Pino, Multer)
+    ├── package.json                       # Server dependencies & scripts (Express, Mongoose, Zod, Pino, Multer, pdfjs, cheerio)
+    ├── vitest.config.js                   # Vitest unit test runner configuration
     ├── scripts/
     │   ├── createAdmin.js                 # Admin provisioning and promotion CLI script
     │   └── syncIndexes.js                 # Database index synchronization CLI tool
     ├── storage/                           # Local attachment storage (gitignored)
     │   └── uploads/                       # Document storage directory
     │       └── tmp/                       # Staging directory for Multer uploads
+    ├── tests/
+    │   └── unit/
+    │       ├── chunkingService.test.js    # Unit tests for chunk bounds, overlap, sentence splitting
+    │       ├── scriptDetect.test.js       # Unit tests for Indic and English script detection
+    │       └── textCleaner.test.js        # Unit tests for NFC normalization and de-hyphenation
     └── src/
         ├── app.js                         # Express application factory with ordered middleware pipeline
-        ├── server.js                      # Startup bootstrap, DB initialization, graceful shutdown
+        ├── server.js                      # Startup bootstrap, DB initialization, IngestionRunner lifecycle
         ├── config/
         │   ├── constants.js               # 17 frozen domain enums, ERROR_CODES, PAGINATION, Indian states
         │   ├── db.js                      # Mongoose connector, retry backoff, DNS SRV resolution
-        │   └── env.js                     # Zod-validated environment configuration (JWT, STORAGE_DIR, UPLOAD)
+        │   └── env.js                     # Zod-validated environment configuration (Ingestion vars included)
         ├── controllers/
         │   ├── adminController.js         # Admin session verification handler
         │   ├── authController.js          # Citizen registration and login handlers
         │   ├── documentController.js      # PDF upload, document listing, facets, and lifecycle handlers
         │   ├── healthController.js        # Liveness (/health) and readiness (/health/ready) handlers
+        │   ├── ingestionController.js     # Admin IngestionJob tracking, inspection, and manual retry handlers
         │   ├── metaController.js          # Metadata options handler (/meta/options) with upload limits
-        │   ├── sourceController.js        # Admin source CRUD handlers
+        │   ├── sourceController.js        # Admin source CRUD and ingestion trigger handlers
         │   └── userController.js          # User profile retrieval and update handlers
-        ├── jobs/.gitkeep                  # Background worker placeholders
+        ├── jobs/
+        │   └── ingestionRunner.js         # Background worker claiming jobs, atomic locking, stale recovery
         ├── middleware/
         │   ├── auth.js                    # JWT Bearer token authentication & user hydration middleware
         │   ├── authorize.js               # Role-based access control middleware (requireRole)
@@ -204,7 +219,7 @@ jansathi-ai/
         │   ├── User.js                    # Citizens and administrators with roles
         │   └── index.js                   # Barrel export for all 9 models
         ├── routes/
-        │   ├── adminRoutes.js             # Protected admin router (/sources, /documents/:id, /session)
+        │   ├── adminRoutes.js             # Protected admin router (/sources, /documents, /ingestion-jobs)
         │   ├── authRoutes.js              # Authentication router (/api/auth/register, /api/auth/login)
         │   ├── documentRoutes.js          # Document catalog router (/upload, /facets, /:id, /pages)
         │   ├── healthRoutes.js            # Health route definitions
@@ -214,10 +229,17 @@ jansathi-ai/
         ├── services/
         │   ├── auditService.js            # Zero-throw tamper-evident audit logging service
         │   ├── authService.js             # Bcrypt hashing, constant-time dummy comparisons & JWT tokens
+        │   ├── chunkingService.js         # Text chunking, sentence splitting, context overlap
         │   ├── documentService.js         # PDF upload, dedupe, catalog listing, facets & lifecycle
-        │   ├── fileStorageService.js      # Secure disk storage, path resolution, UUID names
-        │   ├── ingestionQueueService.js   # Background IngestionJob creation & queuing
+        │   ├── fetchService.js            # Safe source fetching, custom DNS lookup, SSRF prevention
+        │   ├── fileStorageService.js      # Secure disk storage, path resolution, UUID names, readFile
+        │   ├── htmlService.js             # Cheerio HTML section and heading parsing
+        │   ├── ingestionQueueService.js   # Background IngestionJob creation & runner kicking
+        │   ├── ingestionService.js        # Full ingestion orchestration, extraction, cleaning, chunking
+        │   ├── ocrService.js              # Optional experimental OCR fallback
+        │   ├── pdfService.js              # pdfjs-dist line-ordered extraction & page metadata
         │   ├── sourceService.js           # Source CRUD, SSRF prevention, URL normalization
+        │   ├── textCleaner.js             # NFC normalization, control char stripping, de-hyphenation
         │   └── userService.js             # User registration, login, and profile business logic
         ├── utils/
         │   ├── ApiError.js                # Custom operational error class
@@ -227,11 +249,13 @@ jansathi-ai/
         │   ├── modelHelpers.js            # Shared toJSONPlugin for schema transformations
         │   ├── response.js                # Unified sendSuccess, sendPaginated, sendError helpers
         │   ├── safeFilename.js            # Sanitizes filenames and extracts clean document titles
+        │   ├── scriptDetect.js            # Unicode script frequency language detector
         │   └── storage.js                 # Storage utilities
         └── validators/
             ├── authValidators.js          # Zod validation schemas for register & login
             ├── common.js                  # Shared Zod validators (objectId, pagination, trimmedString)
             ├── documentValidators.js      # Zod validation schemas for upload, list, pages & patch
+            ├── ingestionValidators.js     # Zod validation schemas for ingestion job querying & retries
             ├── sourceValidators.js        # Zod validation schemas for source CRUD & SSRF prevention
             └── userValidators.js          # Zod validation schemas for user profile updates
 ```
@@ -240,29 +264,25 @@ jansathi-ai/
 
 ## 7. Security & Privacy Audit
 
-1. **Path Traversal & Storage Isolation**:
-   - Files are stored using random UUIDs (`<uuid>.pdf`). Client filenames are never used for filesystem operations.
-   - `resolveSafePath` enforces that all paths resolve strictly within `STORAGE_DIR`.
-2. **File Content Validation**:
-   - Files undergo strict extension check (`.pdf`), MIME type check (`application/pdf`), and binary magic-byte inspection (`%PDF-` in first 1024 bytes). Non-PDF files are deleted from temporary staging immediately and rejected with `415 UNSUPPORTED_MEDIA_TYPE`.
-3. **SSRF Mitigation**:
-   - Source URLs reject private IP ranges (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `169.254.0.0/16`, `127.0.0.0/8`, `::1`), `localhost`, and embedded credentials.
-4. **Data Isolation & Enumeration Protection**:
-   - Private citizen documents return `404 NOT_FOUND` to other citizens, preventing ID harvesting.
-   - Administrators cannot view private citizen document parsed pages (`403 FORBIDDEN`).
-   - All free-text search queries (`q`) are escaped before regex matching to prevent ReDoS attacks.
+1. **Worker Isolation & Concurrency**:
+   - Background worker utilizes atomic document updates (`findOneAndUpdate`) with `lockedAt` timestamps. No two workers can ever claim the same job.
+   - Concurrency is bounded to `INGESTION_CONCURRENCY` to protect server CPU and memory.
+2. **SSRF Mitigation at Socket Level**:
+   - `fetchService` resolves DNS prior to opening TCP connections and rejects private/loopback/link-local/cloud-metadata addresses.
+   - Redirects are capped at 3 hops and pinned strictly to the initial source hostname.
+3. **Data Integrity & Confidentiality**:
+   - Temporary PDF upload files are purged from disk upon successful extraction unless `KEEP_UPLOADED_FILES=true`.
+   - Extracted document text is never printed to logs; logs contain only identifiers, stage names, counts, and execution durations.
+4. **Resilient Retry Policy**:
+   - Transient failures back off exponentially with random jitter up to 3 attempts.
+   - Non-retriable failures (corrupt PDF, password-protected PDF, SSRF violation) fail immediately without consuming worker cycles.
 
 ---
 
 ## 8. Next Actions & Instructions
 
-Phase 5 has been verified and committed to master (`35e281e`):
+Phase 6 has been implemented, tested, verified, and committed.
 
-```bash
-git log -1 --oneline
-# 35e281e feat(phase-5): source crud, secure pdf upload, deduplication, and document catalog
-```
+To proceed to **Phase 7: Admin Governance & Review**, reply with:
 
-To proceed to **Phase 6: Document Ingestion Pipeline & Background Processing**, simply reply with:
-
-> **`Phase 5 confirmed`**
+> **`Phase 6 confirmed`**

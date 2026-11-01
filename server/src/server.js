@@ -2,6 +2,7 @@ import { createApp } from './app.js';
 import { env } from './config/env.js';
 import { connectDb, disconnectDb } from './config/db.js';
 import { logger } from './utils/logger.js';
+import { ingestionRunner } from './jobs/ingestionRunner.js';
 
 // Global process error handlers
 process.on('uncaughtException', (err) => {
@@ -24,6 +25,11 @@ const startServer = async () => {
     }
   }
 
+  // Start background ingestion worker if enabled
+  if (env.INGESTION_WORKER_ENABLED) {
+    await ingestionRunner.start();
+  }
+
   const app = createApp();
 
   const server = app.listen(env.PORT, () => {
@@ -32,6 +38,16 @@ const startServer = async () => {
 
   const shutdown = async (signal) => {
     logger.info(`Received ${signal}. Shutting down gracefully...`);
+
+    // Stop background worker first
+    if (env.INGESTION_WORKER_ENABLED) {
+      try {
+        await ingestionRunner.stop();
+      } catch (err) {
+        logger.error({ err }, 'Error stopping IngestionRunner during shutdown');
+      }
+    }
+
     server.close(async () => {
       logger.info('HTTP server closed successfully.');
       try {

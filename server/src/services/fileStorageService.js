@@ -81,6 +81,17 @@ export const moveToFinal = async (tempPath) => {
 };
 
 /**
+ * Reads a stored file from disk by storedName.
+ *
+ * @param {string} storedName - Stored filename.
+ * @returns {Promise<Buffer>}
+ */
+export const readFile = async (storedName) => {
+  const filePath = resolveSafePath(storedName);
+  return fs.promises.readFile(filePath);
+};
+
+/**
  * Safely removes a stored file by its storedName. Never throws if the file does not exist.
  *
  * @param {string} storedName - Stored filename (UUID.pdf).

@@ -11,8 +11,14 @@ import {
   updateSource,
   updateSourceStatus,
   deleteSource,
+  triggerSourceIngest,
 } from '../controllers/sourceController.js';
 import { adminUpdateDocument } from '../controllers/documentController.js';
+import {
+  listIngestionJobs,
+  getIngestionJob,
+  retryIngestionJob,
+} from '../controllers/ingestionController.js';
 import { authenticate } from '../middleware/auth.js';
 import { requireRole } from '../middleware/authorize.js';
 import { validate } from '../middleware/validate.js';
@@ -23,6 +29,10 @@ import {
   listSourcesQuerySchema,
 } from '../validators/sourceValidators.js';
 import { adminUpdateDocumentSchema } from '../validators/documentValidators.js';
+import {
+  listIngestionJobsQuerySchema,
+  ingestionJobIdParamSchema,
+} from '../validators/ingestionValidators.js';
 
 const router = Router();
 
@@ -42,8 +52,18 @@ router.patch(
   updateSourceStatus
 );
 router.delete('/sources/:id', deleteSource);
+router.post('/sources/:id/ingest', triggerSourceIngest);
 
 // Document Administrative Routes
 router.patch('/documents/:id', validate({ body: adminUpdateDocumentSchema }), adminUpdateDocument);
+
+// Ingestion Jobs Administrative Routes
+router.get('/ingestion-jobs', validate({ query: listIngestionJobsQuerySchema }), listIngestionJobs);
+router.get('/ingestion-jobs/:id', validate({ params: ingestionJobIdParamSchema }), getIngestionJob);
+router.post(
+  '/ingestion-jobs/:id/retry',
+  validate({ params: ingestionJobIdParamSchema }),
+  retryIngestionJob
+);
 
 export default router;

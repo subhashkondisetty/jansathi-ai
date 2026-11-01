@@ -46,6 +46,29 @@ const envSchema = z.object({
     .union([z.boolean(), z.string()])
     .transform((val) => (typeof val === 'boolean' ? val : val !== 'false'))
     .default(true),
+  INGESTION_WORKER_ENABLED: z
+    .union([z.boolean(), z.string()])
+    .transform((val) => (typeof val === 'boolean' ? val : val !== 'false'))
+    .default(true),
+  INGESTION_CONCURRENCY: z.coerce.number().int().min(1).max(5).default(1),
+  INGESTION_POLL_INTERVAL_MS: z.coerce.number().int().min(500).default(3000),
+  INGESTION_MAX_ATTEMPTS: z.coerce.number().int().min(1).max(10).default(3),
+  INGESTION_RETRY_BASE_DELAY_MS: z.coerce.number().int().min(1000).default(5000),
+  INGESTION_STALE_MINUTES: z.coerce.number().int().min(1).default(10),
+  FETCH_TIMEOUT_MS: z.coerce.number().int().min(1000).default(20000),
+  MAX_FETCH_MB: z.coerce.number().positive().default(25),
+  FETCH_USER_AGENT: z.string().default('JanSathiBot/1.0'),
+  CHUNK_TARGET_CHARS: z.coerce.number().int().min(100).default(1000),
+  CHUNK_MAX_CHARS: z.coerce.number().int().min(200).default(1500),
+  CHUNK_OVERLAP_CHARS: z.coerce.number().int().min(0).default(150),
+  ENABLE_OCR: z
+    .union([z.boolean(), z.string()])
+    .transform((val) => (typeof val === 'boolean' ? val : val === 'true' || val === '1'))
+    .default(false),
+  KEEP_UPLOADED_FILES: z
+    .union([z.boolean(), z.string()])
+    .transform((val) => (typeof val === 'boolean' ? val : val === 'true' || val === '1'))
+    .default(false),
 });
 
 const parsed = envSchema.safeParse(process.env);

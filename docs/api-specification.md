@@ -275,4 +275,46 @@ Retrieves selectable reference options and upload limits for clients.
 - `PUT /api/admin/sources/:id`: Update source attributes (URL immutable if documents exist).
 - `PATCH /api/admin/sources/:id/status`: Toggle source active status.
 - `DELETE /api/admin/sources/:id`: Delete source (409 CONFLICT if referenced by documents).
+- `POST /api/admin/sources/:id/ingest`: Trigger immediate background ingestion job for an active source (202 Accepted).
 - `PATCH /api/admin/documents/:id`: Update document metadata and propagate to chunks.
+
+### 7. Admin Ingestion Job Monitoring & Retries
+
+#### List Ingestion Jobs
+
+- **Method**: `GET`
+- **Path**: `/api/admin/ingestion-jobs`
+- **Access**: Administrator (`admin` role required)
+- **Query Params**: `page` (default 1), `limit` (max 100, default 20), `status`, `type`, `sourceId`, `documentId`, `sort` (default `-createdAt`)
+- **Response 200 OK**:
+  ```json
+  {
+    "success": true,
+    "data": [
+      {
+        "id": "...",
+        "type": "upload",
+        "status": "succeeded",
+        "stage": "done",
+        "attempts": 1,
+        "stats": { "pageCount": 5, "chunkCount": 12, "durationMs": 450 }
+      }
+    ],
+    "meta": { "page": 1, "limit": 20, "total": 1, "totalPages": 1 }
+  }
+  ```
+
+#### Get Ingestion Job Details
+
+- **Method**: `GET`
+- **Path**: `/api/admin/ingestion-jobs/:id`
+- **Access**: Administrator
+- **Response 200 OK**: Detailed job record populated with source name/url and document title/status.
+
+#### Retry Ingestion Job
+
+- **Method**: `POST`
+- **Path**: `/api/admin/ingestion-jobs/:id/retry`
+- **Access**: Administrator
+- **Response 200 OK**: Resets job state to `queued`, attempts to `0`, increments `manualRetries`, resets document to `pending`, and kicks the runner.
+- **Response 409 CONFLICT**: Returned if the target job is not in `failed` status.
