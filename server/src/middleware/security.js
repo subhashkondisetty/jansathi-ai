@@ -28,7 +28,7 @@ export const corsMiddleware = cors({
     if (!origin) {
       return callback(null, true);
     }
-    if (allowedOrigins.includes(origin)) {
+    if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
     return callback(
